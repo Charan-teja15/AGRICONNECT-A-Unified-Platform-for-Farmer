@@ -1,0 +1,8 @@
+{
+  "name": "AGRICONNECT",
+  "description": "AGRICONNECT helps farmers find buyers for their crops, receive rule-based crop guidance, and explore government schemes that may match their farming profile.",
+  "version": "1.0.0",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
