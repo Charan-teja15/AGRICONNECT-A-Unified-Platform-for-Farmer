@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="No crop photo available">
+  <rect width="400" height="300" fill="#E8F5E9"/>
+  <g fill="#2E7D32" opacity="0.35">
+    <path d="M200 190c-4-44-30-72-70-76 0 48 30 76 70 76z"/>
+    <path d="M200 214c5-36 30-62 74-68 0 44-30 68-74 68z"/>
+  </g>
+  <path d="M200 236V150" stroke="#1B5E20" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <text x="200" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#667085" text-anchor="middle">No photo provided</text>
+</svg>

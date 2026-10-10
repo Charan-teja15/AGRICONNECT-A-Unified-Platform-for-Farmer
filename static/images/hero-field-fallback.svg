@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img" aria-label="Illustration of a farmer working in a green field at sunrise">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#103413"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2E7D32"/>
+      <stop offset="100%" stop-color="#1B5E20"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="880" fill="url(#sky)"/>
+  <circle cx="1290" cy="190" r="90" fill="#F9A825" opacity="0.85"/>
+  <path d="M0 600c220-90 420-40 640 10s520 30 960-70v340H0z" fill="url(#field)"/>
+  <g fill="#1B5E20" opacity="0.55">
+    <path d="M0 640c260-70 520-10 800 30s540 20 800-40v250H0z"/>
+  </g>
+  <g stroke="#0E2F11" stroke-width="6" opacity="0.35">
+    <path d="M120 880C300 720 520 660 800 660s500 60 680 220"/>
+    <path d="M-40 880C160 760 420 720 760 720s560 60 880 160"/>
+  </g>
+  <g fill="#F9A825" opacity="0.9">
+    <circle cx="180" cy="700" r="9"/><circle cx="420" cy="742" r="9"/>
+    <circle cx="700" cy="760" r="9"/><circle cx="980" cy="742" r="9"/>
+    <circle cx="1260" cy="700" r="9"/><circle cx="1460" cy="660" r="9"/>
+  </g>
+  <g transform="translate(760 520)">
+    <path d="M0 0c-26 0-46 20-46 46v70h92v-70C46 20 26 0 0 0z" fill="#F1E3C8"/>
+    <ellipse cx="0" cy="-6" rx="34" ry="12" fill="#E0C79B"/>
+    <path d="M-46 118h92v46h-92z" fill="#2E7D32"/>
+    <rect x="-4" y="60" width="8" height="60" fill="#1B5E20"/>
+  </g>
+</svg>

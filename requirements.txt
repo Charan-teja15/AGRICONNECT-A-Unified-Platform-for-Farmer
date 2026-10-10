@@ -1,0 +1,13 @@
+# AGRICONNECT — Python dependencies
+#
+# The frontend itself has NO build step and NO JavaScript dependencies:
+# Bootstrap 5.3.3 and Bootstrap Icons 1.11.3 are vendored in static/vendor/.
+# These packages are only needed to run the backend (and the preview server).
+
+Flask>=3.0            # web framework + Jinja2 + static files
+Werkzeug>=3.0         # password hashing (ships with Flask)
+
+# Recommended for the real application (optional for the preview server):
+# Flask-Login>=0.6.3     # current_user / @login_required
+# Flask-WTF>=1.2         # CSRFProtect -> provides {{ csrf_token() }}
+# Flask-SQLAlchemy>=3.1  # ORM + .paginate() used by marketplace.html

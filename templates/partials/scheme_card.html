@@ -1,0 +1,150 @@
+{# =========================================================================
+   partials/scheme_card.html — one government scheme result card
+
+   Required context : `scheme`
+   Scheme fields used (ORM object or dict):
+     id, name, description, level, category,
+     geo_applicability (string)  |  states (list) — either is fine,
+     eligibility_status  ('potential_match' | 'check_conditions' |
+                          'verification_required'),
+     match_score (optional 0-100, rendered as a cautious strength meter),
+     why_matched (list), conditions_to_verify (list),
+     documents_required (list), application_instructions, official_url
+
+   NOTE: nothing here invents scheme data — every value comes from the backend.
+   ========================================================================= #}
+{% set st = (scheme.eligibility_status or 'check_conditions')|lower %}
+{% if st in ['potential_match', 'potential-match', 'match'] %}
+  {% set badge_class = 'badge-soft' %}
+  {% set badge_icon = 'bi-check2-circle' %}
+  {% set badge_text = 'Potential Match' %}
+{% elif st in ['verification_required', 'verification-required', 'official'] %}
+  {% set badge_class = 'badge-soft badge-soft-info' %}
+  {% set badge_icon = 'bi-bank2' %}
+  {% set badge_text = 'Official Verification Required' %}
+{% else %}
+  {% set badge_class = 'badge-soft badge-soft-warning' %}
+  {% set badge_icon = 'bi-exclamation-circle' %}
+  {% set badge_text = 'Check Additional Conditions' %}
+{% endif %}
+
+<div class="card card-ag card-ag-hover scheme-card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
+      <div class="flex-grow-1" style="min-width: 15rem;">
+        <h3 class="scheme-title">{{ scheme.name }}</h3>
+        <div class="d-flex flex-wrap gap-1">
+          <span class="{{ badge_class }}"><i class="bi {{ badge_icon }}" aria-hidden="true"></i> {{ badge_text }}</span>
+          {% if scheme.level %}<span class="badge-soft badge-soft-neutral"><i class="bi bi-globe2" aria-hidden="true"></i> {{ scheme.level }}</span>{% endif %}
+          {% if scheme.category %}<span class="badge-soft badge-soft-neutral"><i class="bi bi-tag" aria-hidden="true"></i> {{ scheme.category }}</span>{% endif %}
+        </div>
+      </div>
+      {% if scheme.match_score %}
+        <div class="text-end" style="min-width: 8rem;">
+          <span class="small-caps text-muted-ag">Match strength</span>
+          <div class="eligibility-meter" role="img"
+               aria-label="Indicative match strength: {{ scheme.match_score }} percent">
+            {% for i in range(5) %}
+              <span class="em-bar {% if scheme.match_score >= (i + 1) * 20 %}on{% elif scheme.match_score >= i * 20 + 10 %}partial{% endif %}"></span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <p class="scheme-desc">{{ scheme.description }}</p>
+
+    <div class="row g-3">
+      {# --------------------------- Geographic --------------------------- #}
+      <div class="col-md-6">
+        <div class="scheme-block">
+          <h4><i class="bi bi-geo-alt" aria-hidden="true"></i>Applicable in</h4>
+          {% if scheme.geo_applicability %}
+            <p class="mb-0 small">{{ scheme.geo_applicability }}</p>
+          {% elif scheme.states %}
+            <p class="mb-0 small">{{ scheme.states|join(', ') }}</p>
+          {% else %}
+            <p class="mb-0 small text-muted-ag">Not specified — confirm with the implementing department.</p>
+          {% endif %}
+        </div>
+
+        <div class="scheme-block">
+          <h4><i class="bi bi-clipboard-check" aria-hidden="true"></i>Eligibility status</h4>
+          <p class="mb-0 small">
+            {{ scheme.eligibility_note or 'Your profile appears broadly consistent with this scheme. Final eligibility is decided by the implementing authority.' }}
+          </p>
+        </div>
+      </div>
+
+      {# --------------------------- Why matched -------------------------- #}
+      <div class="col-md-6">
+        <div class="scheme-block">
+          <h4><i class="bi bi-diagram-3" aria-hidden="true"></i>Why this scheme matched</h4>
+          {% if scheme.why_matched %}
+            <ul class="scheme-list">
+              {% for reason in scheme.why_matched %}
+                <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mb-0 small text-muted-ag">No specific match reasons were returned for this scheme.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {# ------------------------ Conditions to verify -------------------- #}
+      {% if scheme.conditions_to_verify %}
+      <div class="col-md-6">
+        <div class="scheme-block">
+          <h4><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Conditions you must verify</h4>
+          <ul class="scheme-list">
+            {% for condition in scheme.conditions_to_verify %}
+              <li>{{ condition }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {# -------------------------- Documents needed ---------------------- #}
+      {% if scheme.documents_required %}
+      <div class="col-md-6">
+        <div class="scheme-block">
+          <h4><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Documents usually required</h4>
+          <ul class="scheme-list">
+            {% for document in scheme.documents_required %}
+              <li>{{ document }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ------------------------- How to apply --------------------------- #}
+      {% if scheme.application_instructions %}
+      <div class="col-12">
+        <div class="scheme-block">
+          <h4><i class="bi bi-list-check" aria-hidden="true"></i>How to apply</h4>
+          <p class="mb-0 small">{{ scheme.application_instructions|replace('\n', '<br>')|safe }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="text-muted-ag small">
+      <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+      Informational match only — not an approval.
+    </span>
+    {% if scheme.official_url %}
+      <a href="{{ scheme.official_url }}" class="btn btn-sm btn-ag-outline" target="_blank" rel="noopener noreferrer">
+        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Official website
+      </a>
+    {% else %}
+      <span class="badge-soft badge-soft-neutral">
+        <i class="bi bi-link-45deg" aria-hidden="true"></i> No official link stored
+      </span>
+    {% endif %}
+  </div>
+</div>

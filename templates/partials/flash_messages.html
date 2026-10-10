@@ -1,0 +1,23 @@
+{# =========================================================================
+   partials/flash_messages.html — Flask flash messages (dismissible)
+   Requires Flask's get_flashed_messages() helper (built in).
+   Categories used by the backend: success | danger | warning | info
+   (Flask maps flash('x', 'error') to the 'error' category; we normalise it.)
+   ========================================================================= #}
+{% set flash_messages = get_flashed_messages(with_categories=true) %}
+{% if flash_messages %}
+<div class="flash-stack container-xxl px-3 pt-3" aria-label="Notifications">
+  {% for category, message in flash_messages %}
+    {% set cat = 'danger' if category in ['error', 'danger'] else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) %}
+    {% set icon = 'bi-exclamation-octagon-fill' if cat == 'danger' else ('bi-check-circle-fill' if cat == 'success' else ('bi-exclamation-triangle-fill' if cat == 'warning' else 'bi-info-circle-fill')) %}
+    <div class="alert alert-ag alert-{{ cat }} alert-dismissible fade show d-flex align-items-start gap-2"
+         role="alert" aria-live="polite"
+         {% if cat in ['success', 'info'] %}data-ag-autodismiss="6000"{% endif %}>
+      <i class="bi {{ icon }} flex-shrink-0 mt-1" aria-hidden="true"></i>
+      <div class="flex-grow-1">{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+              aria-label="Dismiss this message"></button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}

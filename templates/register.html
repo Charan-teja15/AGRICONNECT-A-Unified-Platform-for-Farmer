@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Register — AGRICONNECT{% endblock %}
+{% block description %}Create a free AGRICONNECT farmer profile to publish crop listings, request crop guidance and explore government schemes.{% endblock %}
+{% block body_class %}bg-light-green{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md):
+     POST /register -> full_name, email, phone, state, district, land_size,
+                       preferred_crop, password, confirm_password, csrf_token
+     Optional context: states (list), districts (list), crops (list),
+                       collect_phone (bool), collect_land_size (bool),
+                       collect_preferred_crop (bool), errors (dict), form_data (dict)
+     Passwords are NEVER re-populated after a validation error. #}
+{% set fd = form_data if form_data else (request.form if request else {}) %}
+
+{% block content %}
+<section class="auth-wrapper py-4 py-lg-5">
+  <div class="container-xxl">
+    <div class="row justify-content-center">
+      <div class="col-xl-11 col-lg-12">
+
+        <div class="auth-card row g-0">
+
+          <!-- ============================ Side panel ============================ -->
+          <div class="col-lg-5 auth-side d-none d-lg-flex">
+            <div>
+              <span class="brand-mark mb-4" style="background:#fff;color:var(--ag-primary);box-shadow:none;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 21V10"/>
+                  <path d="M12 12c-.5-3.5-3-6.2-7.2-6.9-.7 4.2 1.6 7.2 7.2 7.2z"/>
+                  <path d="M12 15c.7-3.4 3.3-6 7.7-6.8.5 3.8-1.8 6.8-7.7 6.8z"/>
+                </svg>
+              </span>
+              <h2 class="mb-3">Create your farmer profile</h2>
+              <p class="mb-4">One account unlocks all three AGRICONNECT services.</p>
+
+              <div class="auth-point">
+                <i class="bi bi-basket2" aria-hidden="true"></i>
+                <p><strong>List your harvest</strong><br>Reach buyers in your district and beyond.</p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-flower2" aria-hidden="true"></i>
+                <p><strong>Ask about your crop</strong><br>Get guidance explained in simple language.</p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-bank2" aria-hidden="true"></i>
+                <p><strong>Discover schemes</strong><br>See government schemes that fit your farm.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================== Form =============================== -->
+          <div class="col-lg-7 bg-white">
+            <div class="auth-form-pad">
+
+              <div class="mb-4">
+                <h1 class="h3 mb-1">Register as a farmer</h1>
+                <p class="text-muted-ag mb-0">Fields marked <span class="required-star">*</span> are required.</p>
+              </div>
+
+              <form method="post" action="{{ url_for('register') }}" novalidate
+                    data-ag-validate data-ag-check-password-match>
+
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3">Personal details</legend>
+
+                  <div class="row g-3">
+                    <!-- ---------------------------- Full name ---------------------------- -->
+                    <div class="col-12">
+                      <label for="full_name" class="form-label">
+                        Full name <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <input type="text" class="form-control {% if errors and errors.full_name %}is-invalid{% endif %}"
+                             id="full_name" name="full_name"
+                             value="{{ fd.get('full_name', '') }}"
+                             placeholder="e.g. Ramesh Kumar" autocomplete="name"
+                             maxlength="80" required
+                             {% if errors and errors.full_name %}aria-invalid="true" aria-describedby="full_nameError"{% endif %}>
+                      {% if errors and errors.full_name %}
+                        <div class="ag-field-error" id="full_nameError">{{ errors.full_name }}</div>
+                      {% endif %}
+                    </div>
+
+                    <!-- ------------------------------ Email ------------------------------ -->
+                    <div class="col-md-6">
+                      <label for="email" class="form-label">
+                        Email <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <input type="email" class="form-control {% if errors and errors.email %}is-invalid{% endif %}"
+                             id="email" name="email"
+                             value="{{ fd.get('email', '') }}"
+                             placeholder="you@example.com" autocomplete="email" required
+                             {% if errors and errors.email %}aria-invalid="true" aria-describedby="emailError"{% endif %}>
+                      <div class="form-text">Used to sign in and to recover your account.</div>
+                      {% if errors and errors.email %}
+                        <div class="ag-field-error" id="emailError">{{ errors.email }}</div>
+                      {% endif %}
+                    </div>
+
+                    <!-- ------------------------------ Phone ------------------------------ -->
+                    {% if collect_phone|default(true, true) %}
+                    <div class="col-md-6">
+                      <label for="phone" class="form-label">
+                        Phone number {% if require_phone|default(false, true) %}<span class="required-star" aria-hidden="true">*</span>{% endif %}
+                      </label>
+                      <input type="tel" class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+                             id="phone" name="phone"
+                             value="{{ fd.get('phone', '') }}"
+                             placeholder="10-digit mobile number" autocomplete="tel"
+                             inputmode="numeric" pattern="[0-9+\-\s()]{6,15}"
+                             maxlength="15" {% if require_phone|default(false, true) %}required{% endif %}
+                             {% if errors and errors.phone %}aria-invalid="true" aria-describedby="phoneError"{% endif %}>
+                      <div class="form-text">Shown to interested buyers only if you allow it.</div>
+                      {% if errors and errors.phone %}
+                        <div class="ag-field-error" id="phoneError">{{ errors.phone }}</div>
+                      {% endif %}
+                    </div>
+                    {% endif %}
+                  </div>
+                </fieldset>
+
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3">Farm location</legend>
+
+                  <div class="row g-3">
+                    <!-- ------------------------------ State ------------------------------ -->
+                    <div class="col-md-6">
+                      <label for="state" class="form-label">
+                        State <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      {% if states %}
+                        <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}"
+                                id="state" name="state" required
+                                {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                          <option value="" {% if not fd.get('state') %}selected disabled{% endif %}>Select your state</option>
+                          {% for s in states %}
+                            <option value="{{ s }}" {% if fd.get('state') == s %}selected{% endif %}>{{ s }}</option>
+                          {% endfor %}
+                        </select>
+                      {% else %}
+                        <input type="text" class="form-control {% if errors and errors.state %}is-invalid{% endif %}"
+                               id="state" name="state" value="{{ fd.get('state', '') }}"
+                               placeholder="e.g. Telangana" required
+                               {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                      {% endif %}
+                      {% if errors and errors.state %}
+                        <div class="ag-field-error" id="stateError">{{ errors.state }}</div>
+                      {% endif %}
+                    </div>
+
+                    <!-- ----------------------------- District ---------------------------- -->
+                    <div class="col-md-6">
+                      <label for="district" class="form-label">
+                        District <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      {% if districts %}
+                        <select class="form-select {% if errors and errors.district %}is-invalid{% endif %}"
+                                id="district" name="district" required
+                                {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                          <option value="" {% if not fd.get('district') %}selected disabled{% endif %}>Select your district</option>
+                          {% for d in districts %}
+                            <option value="{{ d }}" {% if fd.get('district') == d %}selected{% endif %}>{{ d }}</option>
+                          {% endfor %}
+                        </select>
+                      {% else %}
+                        <input type="text" class="form-control {% if errors and errors.district %}is-invalid{% endif %}"
+                               id="district" name="district" value="{{ fd.get('district', '') }}"
+                               placeholder="e.g. Warangal" required
+                               {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                      {% endif %}
+                      {% if errors and errors.district %}
+                        <div class="ag-field-error" id="districtError">{{ errors.district }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3">Farming details <span class="text-lowercase fw-normal">(optional)</span></legend>
+
+                  <div class="row g-3">
+                    {% if collect_land_size|default(true, true) %}
+                    <!-- ---------------------------- Land size ---------------------------- -->
+                    <div class="col-md-6">
+                      <label for="land_size" class="form-label">Land size (in acres)</label>
+                      <input type="number" class="form-control {% if errors and errors.land_size %}is-invalid{% endif %}"
+                             id="land_size" name="land_size"
+                             value="{{ fd.get('land_size', '') }}"
+                             placeholder="e.g. 2.5" min="0" max="100000" step="0.01" inputmode="decimal"
+                             {% if errors and errors.land_size %}aria-invalid="true" aria-describedby="land_sizeError"{% endif %}>
+                      <div class="form-text">Used to match land-based government schemes.</div>
+                      {% if errors and errors.land_size %}
+                        <div class="ag-field-error" id="land_sizeError">{{ errors.land_size }}</div>
+                      {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if collect_preferred_crop|default(true, true) %}
+                    <!-- -------------------------- Preferred crop ------------------------- -->
+                    <div class="col-md-6">
+                      <label for="preferred_crop" class="form-label">Preferred crop</label>
+                      {% if crops %}
+                        <input class="form-control {% if errors and errors.preferred_crop %}is-invalid{% endif %}"
+                               list="cropSuggestions" id="preferred_crop" name="preferred_crop"
+                               value="{{ fd.get('preferred_crop', '') }}"
+                               placeholder="Start typing, e.g. Paddy"
+                               maxlength="60"
+                               {% if errors and errors.preferred_crop %}aria-invalid="true" aria-describedby="preferred_cropError"{% endif %}>
+                        <datalist id="cropSuggestions">
+                          {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
+                        </datalist>
+                      {% else %}
+                        <input type="text" class="form-control {% if errors and errors.preferred_crop %}is-invalid{% endif %}"
+                               id="preferred_crop" name="preferred_crop"
+                               value="{{ fd.get('preferred_crop', '') }}"
+                               placeholder="e.g. Paddy" maxlength="60"
+                               {% if errors and errors.preferred_crop %}aria-invalid="true" aria-describedby="preferred_cropError"{% endif %}>
+                      {% endif %}
+                      <div class="form-text">The crop you grow most often.</div>
+                      {% if errors and errors.preferred_crop %}
+                        <div class="ag-field-error" id="preferred_cropError">{{ errors.preferred_crop }}</div>
+                      {% endif %}
+                    </div>
+                    {% endif %}
+                  </div>
+                </fieldset>
+
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3">Account security</legend>
+
+                  <div class="row g-3">
+                    <!-- ----------------------------- Password ---------------------------- -->
+                    <div class="col-md-6">
+                      <label for="password" class="form-label">
+                        Password <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <div class="input-group">
+                        {# NOTE: no value attribute — passwords are never re-populated #}
+                        <input type="password" class="form-control {% if errors and errors.password %}is-invalid{% endif %}"
+                               id="password" name="password" data-ag-password
+                               data-ag-strength-target="passwordStrength"
+                               placeholder="At least 8 characters"
+                               autocomplete="new-password" minlength="8" required
+                               {% if errors and errors.password %}aria-invalid="true" aria-describedby="passwordError passwordHelp"{% else %}aria-describedby="passwordHelp"{% endif %}>
+                        <button class="btn btn-password-toggle" type="button"
+                                data-ag-toggle-password="password" title="Show password">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                          <span class="visually-hidden">Show password</span>
+                        </button>
+                      </div>
+                      <div class="password-strength mt-2" id="passwordStrength">
+                        <span data-ag-strength-bar></span>
+                      </div>
+                      <div class="password-hint" id="passwordHelp" data-ag-strength-label aria-live="polite"></div>
+                      <div class="form-text">Use 8+ characters with letters and numbers.</div>
+                      {% if errors and errors.password %}
+                        <div class="ag-field-error" id="passwordError">{{ errors.password }}</div>
+                      {% endif %}
+                    </div>
+
+                    <!-- ------------------------- Confirm password ------------------------ -->
+                    <div class="col-md-6">
+                      <label for="confirm_password" class="form-label">
+                        Confirm password <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <div class="input-group">
+                        <input type="password" class="form-control {% if errors and errors.confirm_password %}is-invalid{% endif %}"
+                               id="confirm_password" name="confirm_password" data-ag-password-confirm
+                               placeholder="Re-enter your password"
+                               autocomplete="new-password" minlength="8" required
+                               {% if errors and errors.confirm_password %}aria-invalid="true" aria-describedby="confirmPasswordError"{% endif %}>
+                        <button class="btn btn-password-toggle" type="button"
+                                data-ag-toggle-password="confirm_password" title="Show password">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                          <span class="visually-hidden">Show password</span>
+                        </button>
+                      </div>
+                      {% if errors and errors.confirm_password %}
+                        <div class="ag-field-error" id="confirmPasswordError">{{ errors.confirm_password }}</div>
+                      {% endif %}
+                      <div class="form-text" data-ag-match-hint>Must match the password above.</div>
+                    </div>
+                  </div>
+                </fieldset>
+
+                {% if errors and errors.general %}
+                  <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-ag-primary w-100 py-2">
+                  <span class="btn-label"><i class="bi bi-person-plus" aria-hidden="true"></i>Create Farmer Profile</span>
+                </button>
+
+                <p class="text-center text-muted-ag mt-3 mb-0">
+                  Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+                </p>
+              </form>
+
+              <p class="text-muted-ag small mt-4 mb-0">
+                <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                Your password is hashed on the server. This form only performs
+                convenience checks — the backend always re-validates every field.
+              </p>
+
+            </div>
+          </div>
+        </div>
+
+        <p class="text-center mt-3 mb-0">
+          <a class="btn btn-link btn-link-ag" href="{{ url_for('index') }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to home
+          </a>
+        </p>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

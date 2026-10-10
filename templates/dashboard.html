@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — AGRICONNECT{% endblock %}
+{% block description %}Your AGRICONNECT farmer dashboard: crop listings, advisory history and government scheme matches.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET /dashboard  ->  user, stats{}, recent_listings[], recent_advisories[],
+                         recent_schemes[], next_steps[], today, profile_completion
+   All values are optional; the page degrades to friendly empty states. #}
+
+{% block content %}
+
+<!-- ============================ PAGE HEADER ============================ -->
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-7">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a> <span class="mx-1" aria-hidden="true">/</span> Dashboard
+        </nav>
+        <h1 class="mb-1">Welcome back, {{ user.name if user and user.name else (current_user.name if current_user and current_user.name else 'Farmer') }}!</h1>
+        <p class="text-muted-ag mb-0">
+          <i class="bi bi-calendar3" aria-hidden="true"></i>
+          {% if today %}{{ today }}{% else %}Here is what is happening on your farm today.{% endif %}
+        </p>
+      </div>
+      <div class="col-lg-5 text-lg-end">
+        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+          <a href="{{ url_for('create_listing') }}" class="btn btn-ag-primary">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i>Add Crop Listing
+          </a>
+          <a href="{{ url_for('profile') }}" class="btn btn-ag-outline">
+            <i class="bi bi-person" aria-hidden="true"></i>My Profile
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+    <div class="row g-4">
+
+      <!-- ============================= SIDEBAR ============================ -->
+      <div class="col-lg-3">
+        <div class="side-nav">
+          <!-- Profile summary -->
+          <div class="card card-ag mb-3">
+            <div class="card-body text-center">
+              <div class="profile-avatar-lg mx-auto mb-2" style="background:var(--ag-light);color:var(--ag-primary);">
+                {{ (user.name if user and user.name else 'F')[:2]|upper }}
+              </div>
+              <h2 class="h6 mb-0">{{ user.name if user and user.name else 'Farmer' }}</h2>
+              <p class="text-muted-ag small mb-2 text-truncate">{{ user.email if user else '' }}</p>
+              <p class="small mb-2">
+                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                {{ user.district if user and user.district else '—' }}{{ ', ' ~ user.state if user and user.state else '' }}
+              </p>
+              {% if profile_completion %}
+                <div class="text-start">
+                  <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted-ag">Profile completion</span>
+                    <span class="fw-semibold">{{ profile_completion }}%</span>
+                  </div>
+                  <div class="progress" style="height:6px;" role="progressbar"
+                       aria-label="Profile completion" aria-valuenow="{{ profile_completion }}"
+                       aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: {{ profile_completion }}%; background: var(--ag-secondary);"></div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <nav class="card card-ag p-2" aria-label="Dashboard sections">
+            <a class="side-link" href="{{ url_for('dashboard') }}">
+              <i class="bi bi-grid-1x2" aria-hidden="true"></i>Overview
+            </a>
+            <a class="side-link" href="{{ url_for('marketplace') }}?mine=1">
+              <i class="bi bi-basket2" aria-hidden="true"></i>My crop listings
+            </a>
+            <a class="side-link" href="{{ url_for('create_listing') }}">
+              <i class="bi bi-plus-circle" aria-hidden="true"></i>Add crop listing
+            </a>
+            <a class="side-link" href="{{ url_for('crop_advisory') }}">
+              <i class="bi bi-flower2" aria-hidden="true"></i>Crop advisory
+            </a>
+            <a class="side-link" href="{{ url_for('subsidy_checker') }}">
+              <i class="bi bi-bank2" aria-hidden="true"></i>Government schemes
+            </a>
+            <a class="side-link" href="{{ url_for('profile') }}">
+              <i class="bi bi-person" aria-hidden="true"></i>Profile settings
+            </a>
+            <hr class="my-2">
+            <form method="post" action="{{ url_for('logout') }}">
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+              <button type="submit" class="side-link w-100 border-0 bg-transparent text-start text-danger">
+                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Log out
+              </button>
+            </form>
+          </nav>
+        </div>
+      </div>
+
+      <!-- ============================= MAIN =============================== -->
+      <div class="col-lg-9">
+
+        <!-- --------------------------- Summary cards ---------------------- -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-xl-3">
+            <div class="card card-ag stat-card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value">{{ stats.active_listings|default(0, true) }}</div>
+                  <div class="stat-label">Total active listings</div>
+                </div>
+                <span class="icon-tile icon-tile-sm"><i class="bi bi-basket2" aria-hidden="true"></i></span>
+              </div>
+              <div class="stat-meta mt-2">
+                <a href="{{ url_for('marketplace') }}?mine=1">Manage listings <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-xl-3">
+            <div class="card card-ag stat-card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value">{{ stats.available_crops|default(0, true) }}</div>
+                  <div class="stat-label">Available crops</div>
+                </div>
+                <span class="icon-tile icon-tile-sm"><i class="bi bi-flower2" aria-hidden="true"></i></span>
+              </div>
+              <div class="stat-meta mt-2">
+                <a href="{{ url_for('marketplace') }}">Browse marketplace <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-xl-3">
+            <div class="card card-ag stat-card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value">{{ stats.advisory_queries|default(0, true) }}</div>
+                  <div class="stat-label">Advisory queries</div>
+                </div>
+                <span class="icon-tile icon-tile-sm"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+              </div>
+              <div class="stat-meta mt-2">
+                {% if history_enabled|default(false, true) %}
+                  <a href="{{ url_for('crop_advisory') }}">Ask another question <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
+                {% else %}
+                  <span class="text-muted-ag">History not stored in this deployment</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-xl-3">
+            <div class="card card-ag stat-card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value">{{ stats.scheme_matches|default(0, true) }}</div>
+                  <div class="stat-label">Relevant scheme matches</div>
+                </div>
+                <span class="icon-tile icon-tile-sm icon-tile-accent"><i class="bi bi-bank2" aria-hidden="true"></i></span>
+              </div>
+              <div class="stat-meta mt-2">
+                <a href="{{ url_for('subsidy_checker') }}">Check schemes <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- --------------------------- Quick actions ----------------------- -->
+        <h2 class="h5 mb-3">Quick actions</h2>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6 col-xl-3">
+            <a class="quick-action" href="{{ url_for('create_listing') }}">
+              <span class="icon-tile icon-tile-sm"><i class="bi bi-plus-circle" aria-hidden="true"></i></span>
+              <span class="qa-body flex-grow-1">
+                <span class="qa-title d-block">Add Crop Listing</span>
+                <span class="qa-text d-block">Publish your harvest for buyers</span>
+              </span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <a class="quick-action" href="{{ url_for('marketplace') }}">
+              <span class="icon-tile icon-tile-sm"><i class="bi bi-basket2" aria-hidden="true"></i></span>
+              <span class="qa-body flex-grow-1">
+                <span class="qa-title d-block">Browse Marketplace</span>
+                <span class="qa-text d-block">See crops from other farmers</span>
+              </span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <a class="quick-action" href="{{ url_for('crop_advisory') }}">
+              <span class="icon-tile icon-tile-sm"><i class="bi bi-flower2" aria-hidden="true"></i></span>
+              <span class="qa-body flex-grow-1">
+                <span class="qa-title d-block">Get Crop Advisory</span>
+                <span class="qa-text d-block">Describe symptoms, get guidance</span>
+              </span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <a class="quick-action" href="{{ url_for('subsidy_checker') }}">
+              <span class="icon-tile icon-tile-sm icon-tile-accent"><i class="bi bi-bank2" aria-hidden="true"></i></span>
+              <span class="qa-body flex-grow-1">
+                <span class="qa-title d-block">Check Government Schemes</span>
+                <span class="qa-text d-block">Match schemes to your profile</span>
+              </span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <!-- ------------------------ Recent listings --------------------- -->
+          <div class="col-xl-7">
+            <div class="card card-ag h-100">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h2 class="h6 mb-0"><i class="bi bi-basket2 text-success" aria-hidden="true"></i> Recent crop listings</h2>
+                <a class="btn btn-sm btn-ag-light" href="{{ url_for('marketplace') }}?mine=1">View all</a>
+              </div>
+              <div class="card-body">
+                {% if recent_listings %}
+                  {% for listing in recent_listings %}
+                    <div class="list-row">
+                      <span class="icon-tile icon-tile-sm"><i class="bi bi-flower2" aria-hidden="true"></i></span>
+                      <div class="flex-grow-1 min-w-0">
+                        <div class="lr-title text-truncate">{{ listing.crop_name }}</div>
+                        <div class="lr-meta">
+                          {{ listing.quantity }} {{ listing.unit or 'quintal' }}
+                          {% if listing.expected_price %} · ₹{{ '{:,.0f}'.format(listing.expected_price) if listing.expected_price is number else listing.expected_price }}{% endif %}
+                          {% if listing.availability_date %} · Available {{ listing.availability_date }}{% endif %}
+                        </div>
+                      </div>
+                      <div class="d-flex gap-1">
+                        <a class="btn btn-sm btn-ag-light" href="{{ url_for('edit_listing', listing_id=listing.id) }}"
+                           aria-label="Edit listing for {{ listing.crop_name }}">
+                          <i class="bi bi-pencil" aria-hidden="true"></i>
+                        </a>
+                        <form method="post" action="{{ url_for('delete_listing', listing_id=listing.id) }}" class="d-inline">
+                          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                          <button type="button" class="btn btn-sm btn-outline-danger"
+                                  aria-label="Delete listing for {{ listing.crop_name }}"
+                                  data-ag-confirm-modal="Delete the listing for {{ listing.crop_name }}? This cannot be undone."
+                                  data-ag-modal-title-text="Delete crop listing"
+                                  data-ag-modal-ok="Yes, delete it"
+                                  data-ag-modal-ok-class="btn-danger">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  {% with es_icon='bi-basket2',
+                           es_title='No crop listings yet',
+                           es_text='Publish your first crop listing so buyers in your district can find your harvest.',
+                           es_action_label='Add Crop Listing',
+                           es_action_url=url_for('create_listing') %}
+                    {% include 'partials/empty_state.html' %}
+                  {% endwith %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------- Recent advisory activity -------------- -->
+          <div class="col-xl-5">
+            <div class="card card-ag h-100">
+              <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h2 class="h6 mb-0"><i class="bi bi-clipboard-data text-success" aria-hidden="true"></i> Recent advisory activity</h2>
+                <a class="btn btn-sm btn-ag-light" href="{{ url_for('crop_advisory') }}">New query</a>
+              </div>
+              <div class="card-body">
+                {% if recent_advisories %}
+                  {% for advisory in recent_advisories %}
+                    <div class="list-row">
+                      <span class="icon-tile icon-tile-sm"><i class="bi bi-flower2" aria-hidden="true"></i></span>
+                      <div class="flex-grow-1 min-w-0">
+                        <div class="lr-title text-truncate">{{ advisory.crop_name or 'Crop query' }}</div>
+                        <div class="lr-meta">
+                          {{ advisory.growth_stage or 'Stage not recorded' }}
+                          {% if advisory.created_at %} · {{ advisory.created_at }}{% endif %}
+                        </div>
+                      </div>
+                      {% if advisory.id %}
+                        <a class="btn btn-sm btn-ag-light" href="{{ url_for('advisory_result', query_id=advisory.id) }}"
+                           aria-label="Open advisory result for {{ advisory.crop_name }}">
+                          <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  {% with es_icon='bi-flower2',
+                           es_title='No advisory queries yet',
+                           es_text='Describe your crop condition and AGRICONNECT will show rule-based guidance with the reason for each suggestion.',
+                           es_action_label='Get Crop Advice',
+                           es_action_url=url_for('crop_advisory') %}
+                    {% include 'partials/empty_state.html' %}
+                  {% endwith %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4 mt-1">
+          <!-- ------------------------- Next steps ------------------------- -->
+          <div class="col-xl-7">
+            <div class="card card-ag h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h2 class="h6 mb-0"><i class="bi bi-lightbulb text-warning" aria-hidden="true"></i> Recommended next steps</h2>
+              </div>
+              <div class="card-body">
+                {% if next_steps %}
+                  {% for step in next_steps %}
+                    <div class="next-step">
+                      <span class="icon-tile icon-tile-sm {{ step.icon_class or '' }}">
+                        <i class="bi {{ step.icon or 'bi-arrow-right-circle' }}" aria-hidden="true"></i>
+                      </span>
+                      <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ step.title }}</div>
+                        <p class="small text-muted-ag mb-1">{{ step.text }}</p>
+                        {% if step.url %}
+                          <a class="btn btn-sm btn-ag-outline" href="{{ step.url }}">
+                            {{ step.action_label or 'Continue' }} <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="next-step">
+                    <span class="icon-tile icon-tile-sm"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+                    <div>
+                      <div class="fw-semibold">Complete your farmer profile</div>
+                      <p class="small text-muted-ag mb-1">Add your land size and preferred crop for better scheme matches.</p>
+                      <a class="btn btn-sm btn-ag-outline" href="{{ url_for('profile') }}">Update profile <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                  </div>
+                  <div class="next-step">
+                    <span class="icon-tile icon-tile-sm"><i class="bi bi-basket2" aria-hidden="true"></i></span>
+                    <div>
+                      <div class="fw-semibold">Publish a crop listing</div>
+                      <p class="small text-muted-ag mb-1">Buyers search by crop name, state and district.</p>
+                      <a class="btn btn-sm btn-ag-outline" href="{{ url_for('create_listing') }}">Add listing <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                  </div>
+                  <div class="next-step">
+                    <span class="icon-tile icon-tile-sm icon-tile-accent"><i class="bi bi-bank2" aria-hidden="true"></i></span>
+                    <div>
+                      <div class="fw-semibold">Run a scheme eligibility check</div>
+                      <p class="small text-muted-ag mb-1">See government schemes that may fit your land and crop profile.</p>
+                      <a class="btn btn-sm btn-ag-outline" href="{{ url_for('subsidy_checker') }}">Check schemes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------- Shortcuts -------------------------- -->
+          <div class="col-xl-5">
+            <div class="card card-ag h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h2 class="h6 mb-0"><i class="bi bi-link-45deg text-success" aria-hidden="true"></i> Helpful shortcuts</h2>
+              </div>
+              <div class="card-body d-flex flex-wrap gap-2 align-content-start">
+                <a class="badge-soft" href="{{ url_for('marketplace') }}"><i class="bi bi-basket2" aria-hidden="true"></i> Marketplace</a>
+                <a class="badge-soft" href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i> New listing</a>
+                <a class="badge-soft" href="{{ url_for('crop_advisory') }}"><i class="bi bi-flower2" aria-hidden="true"></i> Crop advisory</a>
+                <a class="badge-soft" href="{{ url_for('subsidy_checker') }}"><i class="bi bi-bank2" aria-hidden="true"></i> Subsidy checker</a>
+                <a class="badge-soft" href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i> Profile settings</a>
+                <a class="badge-soft" href="{{ url_for('index') }}"><i class="bi bi-house-door" aria-hidden="true"></i> Home page</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ==================== FULL EMPTY STATE (new user) ================= #}
+        {% if not recent_listings and not recent_advisories and not stats.active_listings and not stats.advisory_queries and not stats.scheme_matches %}
+          <div class="mt-4">
+            <div class="card card-ag" style="border-style: dashed;">
+              <div class="card-body">
+                <div class="empty-state">
+                  <div class="es-icon mx-auto"><i class="bi bi-flower2" aria-hidden="true"></i></div>
+                  <h3>Your AGRICONNECT workspace is ready</h3>
+                  <p>
+                    Nothing has been added yet. Start by publishing a crop listing,
+                    asking for crop guidance, or checking which government schemes
+                    may match your farm.
+                  </p>
+                  <a href="{{ url_for('create_listing') }}" class="btn btn-ag-primary">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i>Add your first crop listing
+                  </a>
+                  <a href="{{ url_for('crop_advisory') }}" class="btn btn-ag-outline">Get crop advice</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

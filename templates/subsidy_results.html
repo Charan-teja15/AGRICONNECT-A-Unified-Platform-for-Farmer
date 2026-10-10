@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Government Scheme Matches — AGRICONNECT{% endblock %}
+{% block description %}Government schemes that may match your farming profile, with match reasons, documents required and verification conditions.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     Rendered by POST /subsidy-checker (and shown again by GET /subsidy-results
+     for the last stored check of the logged-in user).
+     Context: schemes[] (each rendered by partials/scheme_card.html),
+              criteria{} (state, district, land_size, landholding_category,
+              crop_type), match_count, schemes_checked, checked_at
+   No scheme data, benefit amount, deadline or URL is invented here. #}
+
+{% block content %}
+
+<!-- ============================ PAGE HEADER ============================ -->
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a>
+          <span class="mx-1" aria-hidden="true">/</span>
+          <a href="{{ url_for('subsidy_checker') }}">Subsidy Checker</a>
+          <span class="mx-1" aria-hidden="true">/</span> Results
+        </nav>
+        <h1 class="mb-2"><i class="bi bi-patch-check text-success" aria-hidden="true"></i> Scheme matches for your farm</h1>
+        <p class="text-muted-ag mb-0">
+          {% if criteria %}
+            Based on
+            {% if criteria.state %}<strong>{{ criteria.state }}</strong>{% endif %}
+            {% if criteria.district %} · {{ criteria.district }}{% endif %}
+            {% if criteria.land_size %} · {{ criteria.land_size }} acres{% endif %}
+            {% if criteria.crop_type %} · {{ criteria.crop_type }}{% endif %}
+          {% else %}
+            Showing the most recent eligibility check stored for your account.
+          {% endif %}
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+          <a href="{{ url_for('subsidy_checker') }}" class="btn btn-ag-outline">
+            <i class="bi bi-pencil" aria-hidden="true"></i>Modify Details
+          </a>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+
+    <!-- -------------------------- Results summary ------------------------ -->
+    <div class="results-toolbar d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <p class="mb-0">
+        <strong>{{ match_count if match_count is defined else (schemes|length if schemes else 0) }}</strong>
+        potential scheme match(es) found
+        {% if schemes_checked %}<span class="text-muted-ag">from {{ schemes_checked }} schemes checked</span>{% endif %}
+        {% if checked_at %}<span class="text-muted-ag">· checked on {{ checked_at }}</span>{% endif %}
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge-soft"><i class="bi bi-check2-circle" aria-hidden="true"></i> Potential Match</span>
+        <span class="badge-soft badge-soft-warning"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> Check Additional Conditions</span>
+        <span class="badge-soft badge-soft-info"><i class="bi bi-bank2" aria-hidden="true"></i> Official Verification Required</span>
+      </div>
+    </div>
+
+    <!-- ---------------------------- Disclaimer --------------------------- -->
+    <div class="disclaimer-note mb-4 d-flex gap-3">
+      <i class="bi bi-exclamation-triangle-fill fs-4 flex-shrink-0" aria-hidden="true"></i>
+      <p class="mb-0">
+        <strong>These results are preliminary informational matches.</strong>
+        Final eligibility and approval are determined by the relevant government
+        authority. AGRICONNECT uses only the scheme data configured in this
+        application and does not guarantee scheme approval, benefit amounts or
+        processing timelines.
+      </p>
+    </div>
+
+    <!-- ------------------------------ Results --------------------------- -->
+    {% if schemes %}
+      <div class="row g-4">
+        {% for scheme in schemes %}
+          <div class="col-lg-6">
+            {% include 'partials/scheme_card.html' %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% with es_icon='bi-bank2',
+               es_title='No schemes matched your profile',
+               es_text='No scheme in the configured scheme database matched the details you entered. You can broaden your search by removing the district or crop filters, or verify your land size and try again. Scheme data in this application is limited to what the administrator has configured — absence of a match does not mean you are ineligible for every government programme.',
+               es_action_label='Try Again',
+               es_action_url=url_for('subsidy_checker'),
+               es_secondary_label='Back to Dashboard',
+               es_secondary_url=url_for('dashboard') %}
+        {% include 'partials/empty_state.html' %}
+      {% endwith %}
+    {% endif %}
+
+    <!-- -------------------------- Bottom actions ------------------------- -->
+    <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
+      <a href="{{ url_for('subsidy_checker') }}" class="btn btn-ag-primary">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Check Again
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ag-outline">
+        <i class="bi bi-grid-1x2" aria-hidden="true"></i>Back to Dashboard
+      </a>
+    </div>
+
+    <p class="text-muted-ag small text-center mt-4 mb-0">
+      <i class="bi bi-shield-check" aria-hidden="true"></i>
+      Always confirm scheme details, required documents and deadlines with the
+      concerned department, your village agriculture officer, or the official
+      government portal before applying.
+    </p>
+
+  </div>
+</section>
+
+{% endblock %}

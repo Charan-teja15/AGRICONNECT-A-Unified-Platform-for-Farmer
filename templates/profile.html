@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — AGRICONNECT{% endblock %}
+{% block description %}View and update your AGRICONNECT farmer profile: contact details, location, land size and preferred crop.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET  /profile            -> user{} (view mode)
+     GET  /profile?edit=1     -> edit_mode=True (edit form)
+     POST /profile            -> full_name, email, phone, state, district,
+                                 land_size, preferred_crop, csrf_token
+     Optional context: states[], districts[], crops[], errors{}, form_data{},
+                       edit_mode, profile_completion, member_since #}
+
+{% set fd = form_data if form_data else (user if user else {}) %}
+
+{% block content %}
+
+<section class="py-4">
+  <div class="container-xxl">
+
+    <!-- =========================== PROFILE HERO ========================== -->
+    <div class="profile-hero mb-4">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <div class="profile-avatar-lg" aria-hidden="true">{{ (user.name if user and user.name else 'F')[:2]|upper }}</div>
+        <div class="flex-grow-1">
+          <h1 class="h4 mb-1">{{ user.name if user and user.name else 'Farmer profile' }}</h1>
+          <p class="mb-1" style="color: rgba(255,255,255,.85);">
+            <i class="bi bi-envelope" aria-hidden="true"></i> {{ user.email if user and user.email else '—' }}
+            {% if user and user.phone %} · <i class="bi bi-telephone" aria-hidden="true"></i> {{ user.phone }}{% endif %}
+          </p>
+          <p class="mb-0 small" style="color: rgba(255,255,255,.75);">
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            {{ user.district if user and user.district else 'District not set' }}{{ ', ' ~ user.state if user and user.state else '' }}
+            {% if member_since %} · Member since {{ member_since }}{% endif %}
+          </p>
+        </div>
+        {% if not edit_mode %}
+          <a href="{{ url_for('profile') }}?edit=1" class="btn btn-ag-accent">
+            <i class="bi bi-pencil" aria-hidden="true"></i>Edit Profile
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- ============================= MAIN CARD ========================== -->
+      <div class="col-lg-8">
+
+        {% if edit_mode %}
+        {# ============================= EDIT MODE ============================ #}
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3">
+            <h2 class="h6 mb-0"><i class="bi bi-pencil-square text-success" aria-hidden="true"></i> Edit profile details</h2>
+          </div>
+          <div class="card-body p-4">
+            <form method="post" action="{{ url_for('profile') }}" novalidate data-ag-validate>
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+              {% if errors and errors.general %}
+                <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
+              {% endif %}
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="full_name" class="form-label">
+                    Full name <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" class="form-control {% if errors and errors.full_name %}is-invalid{% endif %}"
+                         id="full_name" name="full_name" value="{{ fd.get('full_name', '') }}"
+                         maxlength="80" required autocomplete="name"
+                         {% if errors and errors.full_name %}aria-invalid="true" aria-describedby="full_nameError"{% endif %}>
+                  {% if errors and errors.full_name %}
+                    <div class="ag-field-error" id="full_nameError">{{ errors.full_name }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label for="email" class="form-label">
+                    Email <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="email" class="form-control {% if errors and errors.email %}is-invalid{% endif %}"
+                         id="email" name="email" value="{{ fd.get('email', '') }}"
+                         required autocomplete="email"
+                         {% if errors and errors.email %}aria-invalid="true" aria-describedby="emailError"{% endif %}>
+                  <div class="form-text">Used for signing in.</div>
+                  {% if errors and errors.email %}
+                    <div class="ag-field-error" id="emailError">{{ errors.email }}</div>
+                  {% endif %}
+                </div>
+
+                {% if collect_phone|default(true, true) %}
+                <div class="col-md-6">
+                  <label for="phone" class="form-label">Phone number</label>
+                  <input type="tel" class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+                         id="phone" name="phone" value="{{ fd.get('phone', '') }}"
+                         inputmode="numeric" pattern="[0-9+\-\s()]{6,15}" maxlength="15" autocomplete="tel"
+                         {% if errors and errors.phone %}aria-invalid="true" aria-describedby="phoneError"{% endif %}>
+                  {% if errors and errors.phone %}
+                    <div class="ag-field-error" id="phoneError">{{ errors.phone }}</div>
+                  {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="{% if collect_phone|default(true, true) %}col-md-6{% else %}col-md-12{% endif %}">
+                  <label for="preferred_crop" class="form-label">Preferred crop</label>
+                  {% if crops %}
+                    <input class="form-control {% if errors and errors.preferred_crop %}is-invalid{% endif %}"
+                           list="cropSuggestions" id="preferred_crop" name="preferred_crop"
+                           value="{{ fd.get('preferred_crop', '') }}" maxlength="60"
+                           {% if errors and errors.preferred_crop %}aria-invalid="true" aria-describedby="preferred_cropError"{% endif %}>
+                    <datalist id="cropSuggestions">
+                      {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
+                    </datalist>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.preferred_crop %}is-invalid{% endif %}"
+                           id="preferred_crop" name="preferred_crop" value="{{ fd.get('preferred_crop', '') }}"
+                           maxlength="60"
+                           {% if errors and errors.preferred_crop %}aria-invalid="true" aria-describedby="preferred_cropError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.preferred_crop %}
+                    <div class="ag-field-error" id="preferred_cropError">{{ errors.preferred_crop }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  <label for="state" class="form-label">
+                    State <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  {% if states %}
+                    <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}"
+                            id="state" name="state" required
+                            {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                      <option value="" {% if not fd.get('state') %}selected disabled{% endif %}>Select state</option>
+                      {% for s in states %}
+                        <option value="{{ s }}" {% if fd.get('state', '') == s %}selected{% endif %}>{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.state %}is-invalid{% endif %}"
+                           id="state" name="state" value="{{ fd.get('state', '') }}" required
+                           {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.state %}
+                    <div class="ag-field-error" id="stateError">{{ errors.state }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  <label for="district" class="form-label">
+                    District <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  {% if districts %}
+                    <select class="form-select {% if errors and errors.district %}is-invalid{% endif %}"
+                            id="district" name="district" required
+                            {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                      <option value="" {% if not fd.get('district') %}selected disabled{% endif %}>Select district</option>
+                      {% for d in districts %}
+                        <option value="{{ d }}" {% if fd.get('district', '') == d %}selected{% endif %}>{{ d }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.district %}is-invalid{% endif %}"
+                           id="district" name="district" value="{{ fd.get('district', '') }}" required
+                           {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.district %}
+                    <div class="ag-field-error" id="districtError">{{ errors.district }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  <label for="land_size" class="form-label">Land size (in acres)</label>
+                  <input type="number" class="form-control {% if errors and errors.land_size %}is-invalid{% endif %}"
+                         id="land_size" name="land_size" value="{{ fd.get('land_size', '') }}"
+                         min="0" max="100000" step="0.01" inputmode="decimal"
+                         {% if errors and errors.land_size %}aria-invalid="true" aria-describedby="land_sizeError"{% endif %}>
+                  {% if errors and errors.land_size %}
+                    <div class="ag-field-error" id="land_sizeError">{{ errors.land_size }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <hr class="ag-rule my-4">
+
+              <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <a href="{{ url_for('profile') }}" class="btn btn-ag-light">
+                  <i class="bi bi-x" aria-hidden="true"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-ag-primary px-4">
+                  <span class="btn-label"><i class="bi bi-check2-circle" aria-hidden="true"></i>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {% else %}
+        {# ============================= VIEW MODE ============================ #}
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h2 class="h6 mb-0"><i class="bi bi-person text-success" aria-hidden="true"></i> Profile information</h2>
+            <a href="{{ url_for('profile') }}?edit=1" class="btn btn-sm btn-ag-outline">
+              <i class="bi bi-pencil" aria-hidden="true"></i>Edit
+            </a>
+          </div>
+          <div class="card-body p-4">
+            <dl class="mb-0">
+              <div class="detail-row">
+                <dt class="dr-label">Full name</dt>
+                <dd class="dr-value mb-0">{{ user.name if user and user.name else '—' }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt class="dr-label">Email</dt>
+                <dd class="dr-value mb-0">{{ user.email if user and user.email else '—' }}</dd>
+              </div>
+              {% if collect_phone|default(true, true) %}
+              <div class="detail-row">
+                <dt class="dr-label">Phone number</dt>
+                <dd class="dr-value mb-0">{{ user.phone if user and user.phone else 'Not provided' }}</dd>
+              </div>
+              {% endif %}
+              <div class="detail-row">
+                <dt class="dr-label">State</dt>
+                <dd class="dr-value mb-0">{{ user.state if user and user.state else 'Not provided' }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt class="dr-label">District</dt>
+                <dd class="dr-value mb-0">{{ user.district if user and user.district else 'Not provided' }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt class="dr-label">Land size</dt>
+                <dd class="dr-value mb-0">
+                  {% if user and user.land_size %}{{ user.land_size }} acres{% else %}Not provided{% endif %}
+                </dd>
+              </div>
+              <div class="detail-row">
+                <dt class="dr-label">Preferred crop</dt>
+                <dd class="dr-value mb-0">{{ user.preferred_crop if user and user.preferred_crop else 'Not provided' }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt class="dr-label">Member since</dt>
+                <dd class="dr-value mb-0">{{ member_since or (user.created_at if user and user.created_at else '—') }}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a href="{{ url_for('marketplace') }}?mine=1" class="btn btn-ag-outline">
+            <i class="bi bi-basket2" aria-hidden="true"></i>My Crop Listings
+          </a>
+          <a href="{{ url_for('subsidy_checker') }}" class="btn btn-ag-outline">
+            <i class="bi bi-bank2" aria-hidden="true"></i>Check Schemes
+          </a>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- ============================ SIDE PANEL ========================== -->
+      <div class="col-lg-4">
+        <div class="card card-ag">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-lightbulb text-warning" aria-hidden="true"></i> Why your profile matters</h2>
+            <ul class="small text-muted-ag mb-0 ps-3">
+              <li>Your <strong>state and district</strong> filter marketplace results and state-specific schemes.</li>
+              <li>Your <strong>land size</strong> is used for landholding-based scheme conditions.</li>
+              <li>Your <strong>preferred crop</strong> pre-fills the advisory and scheme forms.</li>
+            </ul>
+          </div>
+        </div>
+
+        {% if profile_completion %}
+          <div class="card card-ag mt-3">
+            <div class="card-body">
+              <h2 class="h6 mb-2"><i class="bi bi-person-check text-success" aria-hidden="true"></i> Profile completion</h2>
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted-ag">Completed</span>
+                <span class="fw-semibold">{{ profile_completion }}%</span>
+              </div>
+              <div class="progress" style="height:8px;" role="progressbar"
+                   aria-label="Profile completion" aria-valuenow="{{ profile_completion }}"
+                   aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: {{ profile_completion }}%; background: var(--ag-secondary);"></div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="info-note mt-3">
+          <i class="bi bi-shield-lock" aria-hidden="true"></i>
+          Your details are only used inside this application. Passwords are
+          stored as hashes and are never shown.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

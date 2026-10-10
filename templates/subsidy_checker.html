@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Find Government Schemes for Your Farm — AGRICONNECT{% endblock %}
+{% block description %}Enter your state, district, land size and crop type to explore government schemes that may match your farming profile.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET/POST /subsidy-checker
+     POST fields: state, district, land_size, landholding_category, crop_type,
+                  + any dynamic field defined in extra_fields[], csrf_token
+     On success the backend renders subsidy_results.html with `schemes`.
+     On validation failure it re-renders this page with errors{} + form_data{}.
+     Optional context: states[], districts[], crops[], categories[],
+                       extra_fields[], form_data{}, errors{} #}
+
+{% set fd = form_data if form_data else (request.form if request else {}) %}
+{% set category_options = categories if categories else ['Marginal (below 1 hectare)', 'Small (1–2 hectares)', 'Semi-medium (2–4 hectares)', 'Medium (4–10 hectares)', 'Large (above 10 hectares)'] %}
+
+{% block content %}
+
+<!-- ============================ PAGE HEADER ============================ -->
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a> <span class="mx-1" aria-hidden="true">/</span> Subsidy Checker
+        </nav>
+        <h1 class="mb-1">Find Government Schemes for Your Farm</h1>
+        <p class="text-muted-ag mb-0">Enter your farming details to explore schemes that may match your profile.</p>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">
+          <i class="bi bi-grid-1x2" aria-hidden="true"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+    <div class="row g-4">
+
+      <!-- ============================== FORM ============================== -->
+      <div class="col-lg-8">
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3">
+            <h2 class="h6 mb-0"><i class="bi bi-bank2 text-success" aria-hidden="true"></i> Your farming profile</h2>
+          </div>
+
+          <div class="card-body p-4">
+            <form method="post" action="{{ url_for('subsidy_checker') }}" novalidate data-ag-validate>
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+              {% if errors and errors.general %}
+                <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
+              {% endif %}
+
+              <div class="row g-3">
+                <!-- ------------------------------ State ---------------------------- -->
+                <div class="col-md-6">
+                  <label for="state" class="form-label">
+                    State <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  {% if states %}
+                    <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}"
+                            id="state" name="state" required
+                            {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                      <option value="" {% if not fd.get('state') %}selected disabled{% endif %}>Select your state</option>
+                      {% for s in states %}
+                        <option value="{{ s }}" {% if fd.get('state', user.state if user and user.state else '') == s %}selected{% endif %}>{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.state %}is-invalid{% endif %}"
+                           id="state" name="state"
+                           value="{{ fd.get('state', user.state if user and user.state else '') }}"
+                           placeholder="e.g. Telangana" required
+                           {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.state %}
+                    <div class="ag-field-error" id="stateError">{{ errors.state }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ----------------------------- District -------------------------- -->
+                <div class="col-md-6">
+                  <label for="district" class="form-label">District</label>
+                  {% if districts %}
+                    <select class="form-select {% if errors and errors.district %}is-invalid{% endif %}"
+                            id="district" name="district"
+                            {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                      <option value="">All districts</option>
+                      {% for d in districts %}
+                        <option value="{{ d }}" {% if fd.get('district', user.district if user and user.district else '') == d %}selected{% endif %}>{{ d }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.district %}is-invalid{% endif %}"
+                           id="district" name="district"
+                           value="{{ fd.get('district', user.district if user and user.district else '') }}"
+                           placeholder="e.g. Warangal"
+                           {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                  {% endif %}
+                  <div class="form-text">Some state schemes apply only to selected districts.</div>
+                  {% if errors and errors.district %}
+                    <div class="ag-field-error" id="districtError">{{ errors.district }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ---------------------------- Land size -------------------------- -->
+                <div class="col-md-4">
+                  <label for="land_size" class="form-label">
+                    Land size (in acres) <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="number" class="form-control {% if errors and errors.land_size %}is-invalid{% endif %}"
+                         id="land_size" name="land_size"
+                         value="{{ fd.get('land_size', user.land_size if user and user.land_size else '') }}"
+                         placeholder="e.g. 2.5" min="0" max="100000" step="0.01" inputmode="decimal" required
+                         {% if errors and errors.land_size %}aria-invalid="true" aria-describedby="land_sizeError"{% endif %}>
+                  {% if errors and errors.land_size %}
+                    <div class="ag-field-error" id="land_sizeError">{{ errors.land_size }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ---------------------- Landholding category --------------------- -->
+                {% if collect_landholding_category|default(true, true) %}
+                <div class="col-md-4">
+                  <label for="landholding_category" class="form-label">
+                    Landholding category
+                    <span class="text-muted-ag fw-normal">(optional)</span>
+                  </label>
+                  <select class="form-select" id="landholding_category" name="landholding_category"
+                          {% if errors and errors.landholding_category %}aria-invalid="true" aria-describedby="landholding_categoryError"{% endif %}>
+                    <option value="">Select category</option>
+                    {% for c in category_options %}
+                      <option value="{{ c }}" {% if fd.get('landholding_category', '') == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="form-text">Leave blank and it is derived from land size.</div>
+                  {% if errors and errors.landholding_category %}
+                    <div class="ag-field-error" id="landholding_categoryError">{{ errors.landholding_category }}</div>
+                  {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- ----------------------------- Crop type -------------------------- -->
+                <div class="{% if collect_landholding_category|default(true, true) %}col-md-4{% else %}col-md-8{% endif %}">
+                  <label for="crop_type" class="form-label">Crop type</label>
+                  {% if crops %}
+                    <input class="form-control {% if errors and errors.crop_type %}is-invalid{% endif %}"
+                           list="cropSuggestions" id="crop_type" name="crop_type"
+                           value="{{ fd.get('crop_type', user.preferred_crop if user and user.preferred_crop else '') }}"
+                           placeholder="e.g. Paddy" maxlength="60"
+                           {% if errors and errors.crop_type %}aria-invalid="true" aria-describedby="crop_typeError"{% endif %}>
+                    <datalist id="cropSuggestions">
+                      {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
+                    </datalist>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.crop_type %}is-invalid{% endif %}"
+                           id="crop_type" name="crop_type"
+                           value="{{ fd.get('crop_type', user.preferred_crop if user and user.preferred_crop else '') }}"
+                           placeholder="e.g. Paddy" maxlength="60"
+                           {% if errors and errors.crop_type %}aria-invalid="true" aria-describedby="crop_typeError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.crop_type %}
+                    <div class="ag-field-error" id="crop_typeError">{{ errors.crop_type }}</div>
+                  {% endif %}
+                </div>
+
+                {# --------- Additional eligibility fields (scheme-database driven) ---- #}
+                {% if extra_fields %}
+                  <div class="col-12">
+                    <hr class="ag-rule">
+                    <p class="small-caps text-muted-ag mb-2">Additional eligibility information</p>
+                  </div>
+                  {% for field in extra_fields %}
+                    <div class="col-md-6">
+                      <label for="extra_{{ field.name }}" class="form-label">
+                        {{ field.label }}
+                        {% if field.required %}<span class="required-star" aria-hidden="true">*</span>{% else %}
+                          <span class="text-muted-ag fw-normal">(optional)</span>{% endif %}
+                      </label>
+
+                      {% if field.type == 'select' %}
+                        <select class="form-select {% if errors and errors[field.name] %}is-invalid{% endif %}"
+                                id="extra_{{ field.name }}" name="{{ field.name }}"
+                                {% if field.required %}required{% endif %}>
+                          <option value="">Select an option</option>
+                          {% for opt in field.options or [] %}
+                            <option value="{{ opt.value if opt.value else opt }}"
+                                    {% if fd.get(field.name, '') == (opt.value if opt.value else opt) %}selected{% endif %}>
+                              {{ opt.label if opt.label else opt }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      {% elif field.type == 'number' %}
+                        <input type="number" class="form-control {% if errors and errors[field.name] %}is-invalid{% endif %}"
+                               id="extra_{{ field.name }}" name="{{ field.name }}"
+                               value="{{ fd.get(field.name, '') }}"
+                               min="{{ field.min if field.min is defined else 0 }}" step="{{ field.step or 'any' }}"
+                               inputmode="decimal" {% if field.required %}required{% endif %}>
+                      {% elif field.type == 'checkbox' %}
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" value="1"
+                                 id="extra_{{ field.name }}" name="{{ field.name }}"
+                                 {% if fd.get(field.name) %}checked{% endif %}>
+                          <label class="form-check-label" for="extra_{{ field.name }}">{{ field.checkbox_label or 'Yes' }}</label>
+                        </div>
+                      {% else %}
+                        <input type="text" class="form-control {% if errors and errors[field.name] %}is-invalid{% endif %}"
+                               id="extra_{{ field.name }}" name="{{ field.name }}"
+                               value="{{ fd.get(field.name, '') }}"
+                               placeholder="{{ field.placeholder or '' }}"
+                               {% if field.required %}required{% endif %}>
+                      {% endif %}
+
+                      {% if field.help %}<div class="form-text">{{ field.help }}</div>{% endif %}
+                      {% if errors and errors[field.name] %}
+                        <div class="ag-field-error">{{ errors[field.name] }}</div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">Cancel</a>
+                <button type="submit" class="btn btn-ag-primary px-4">
+                  <span class="btn-label"><i class="bi bi-patch-check" aria-hidden="true"></i>Check My Eligibility</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ SIDE HELP =========================== -->
+      <div class="col-lg-4">
+        <div class="card card-ag overflow-hidden mb-3">
+          <img src="{{ url_for('static', filename='images/subsidy-illustration.jpg') }}"
+               alt="A farmer holding government scheme documents outside a rural service office"
+               class="img-fluid" loading="lazy" style="height:170px;object-fit:cover;width:100%;">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-info-circle text-success" aria-hidden="true"></i> What happens next</h2>
+            <ol class="small text-muted-ag mb-0 ps-3">
+              <li>Your answers are compared with the scheme data stored in this application.</li>
+              <li>Schemes whose basic conditions you satisfy are listed as potential matches.</li>
+              <li>Each result explains <strong>why</strong> it matched and what to verify.</li>
+              <li>You then apply through the official government channel.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="card card-ag">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-file-earmark-text text-success" aria-hidden="true"></i> Keep these handy</h2>
+            <ul class="small text-muted-ag mb-0 ps-3">
+              <li>Aadhaar / identity proof</li>
+              <li>Land records (pahani / RoR / khatauni)</li>
+              <li>Bank passbook with IFSC</li>
+              <li>Crop sowing certificate, if available</li>
+              <li>Passport-size photographs</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="disclaimer-note mt-3">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          AGRICONNECT stores only the scheme data configured by the project
+          administrator. It does not create, modify or guarantee any scheme.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

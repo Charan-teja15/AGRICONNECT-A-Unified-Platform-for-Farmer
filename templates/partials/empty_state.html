@@ -1,0 +1,35 @@
+{# =========================================================================
+   partials/empty_state.html — reusable friendly empty state
+
+   Usage:
+     {% with es_icon='bi-basket2',
+             es_title='No listings yet',
+             es_text='...',
+             es_action_label='Add your first listing',
+             es_action_url=url_for('create_listing') %}
+       {% include 'partials/empty_state.html' %}
+     {% endwith %}
+
+   Optional: es_secondary_label / es_secondary_url
+   ========================================================================= #}
+<div class="card card-ag text-center">
+  <div class="card-body">
+    <div class="empty-state">
+      <div class="es-icon mx-auto">
+        <i class="bi {{ es_icon|default('bi-inbox') }}" aria-hidden="true"></i>
+      </div>
+      <h3>{{ es_title|default('Nothing to show yet') }}</h3>
+      <p>{{ es_text|default('There is no data to display at the moment.') }}</p>
+      {% if es_action_url and es_action_label %}
+        <a href="{{ es_action_url }}" class="btn btn-ag-primary">
+          <i class="bi bi-plus-circle" aria-hidden="true"></i>{{ es_action_label }}
+        </a>
+      {% endif %}
+      {% if es_secondary_url and es_secondary_label %}
+        <a href="{{ es_secondary_url }}" class="btn btn-ag-outline ms-sm-2 mt-2 mt-sm-0">
+          {{ es_secondary_label }}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>

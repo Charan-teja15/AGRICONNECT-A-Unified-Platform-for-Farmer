@@ -1,0 +1,83 @@
+{# =========================================================================
+   partials/footer.html — global footer with navigation and disclaimer
+   ========================================================================= #}
+<footer class="footer-ag pt-5 pb-0 mt-5">
+  <div class="container-xxl">
+    <div class="row g-4">
+      {# ------------------------------ About ------------------------------ #}
+      <div class="col-lg-4 col-md-6">
+        <a href="{{ url_for('index') }}" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21V10"/>
+              <path d="M12 12c-.5-3.5-3-6.2-7.2-6.9-.7 4.2 1.6 7.2 7.2 7.2z"/>
+              <path d="M12 15c.7-3.4 3.3-6 7.7-6.8.5 3.8-1.8 6.8-7.7 6.8z"/>
+            </svg>
+          </span>
+          <span class="text-white fs-5 fw-bold" style="letter-spacing:.02em;">AGRICONNECT</span>
+        </a>
+        <p class="mb-3" style="max-width: 30rem;">
+          A unified platform for farmer market access, crop advisory and government
+          subsidy awareness — connecting farmers to markets, knowledge and
+          government support.
+        </p>
+        <p class="mb-0 small">
+          <i class="bi bi-quote" aria-hidden="true"></i>
+          <em>“Connecting Farmers to Markets, Knowledge and Government Support.”</em>
+        </p>
+      </div>
+
+      {# ---------------------------- Services ---------------------------- #}
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6>Services</h6>
+        <ul class="footer-links">
+          <li><a href="{{ url_for('marketplace') }}"><i class="bi bi-basket2" aria-hidden="true"></i>Farmer Marketplace</a></li>
+          <li><a href="{{ url_for('crop_advisory') }}"><i class="bi bi-flower2" aria-hidden="true"></i>Crop Advisory</a></li>
+          <li><a href="{{ url_for('subsidy_checker') }}"><i class="bi bi-bank2" aria-hidden="true"></i>Subsidy Checker</a></li>
+          <li><a href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i>Add a Listing</a></li>
+        </ul>
+      </div>
+
+      {# ----------------------------- Account ---------------------------- #}
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6>Account</h6>
+        <ul class="footer-links">
+          {% if current_user and current_user.is_authenticated %}
+            <li><a href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard</a></li>
+            <li><a href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i>My profile</a></li>
+          {% else %}
+            <li><a href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Login</a></li>
+            <li><a href="{{ url_for('register') }}"><i class="bi bi-person-plus" aria-hidden="true"></i>Register</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      {# ---------------------------- Disclaimer -------------------------- #}
+      <div class="col-lg-4 col-md-12">
+        <h6><i class="bi bi-info-circle" aria-hidden="true"></i>Important disclaimer</h6>
+        <div class="footer-disclaimer">
+          AGRICONNECT is an academic project prototype. Crop advisory output is
+          generated from simple, explainable rule-based logic and
+          <strong>does not guarantee any particular agricultural outcome</strong>.
+          Subsidy results are preliminary informational matches created from the
+          scheme data configured in this application — they
+          <strong>do not guarantee scheme approval, benefit payment or eligibility</strong>.
+          Always confirm details with the concerned government department,
+          agriculture officer or an authorised local authority before acting.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom mt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+      <p class="mb-0">
+        &copy; <span datetime="{{ now.year if now else '' }}">{{ current_year if current_year else (now.year if now else '2026') }}</span>
+        AGRICONNECT — {{ app_name or 'AGRICONNECT' }}. College project prototype.
+      </p>
+      <p class="mb-0 small">
+        <i class="bi bi-shield-check" aria-hidden="true"></i>
+        No payments are processed through this platform.
+      </p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Login — AGRICONNECT{% endblock %}
+{% block description %}Log in to your AGRICONNECT farmer account to manage crop listings, crop advisory queries and government scheme checks.{% endblock %}
+{% block body_class %}bg-light-green{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md):
+     POST /login  ->  fields: email, password, remember, csrf_token
+     On failure, re-render with `errors` (dict) and `form_data` (dict).
+     Pass `supports_remember_me = False` to hide the remember-me control. #}
+{% set fd = form_data if form_data else (request.form if request else {}) %}
+
+{% block content %}
+<section class="auth-wrapper py-4 py-lg-5">
+  <div class="container-xxl">
+    <div class="row justify-content-center">
+      <div class="col-xl-10 col-lg-11">
+
+        <div class="auth-card row g-0">
+
+          <!-- ============================ Side panel ============================ -->
+          <div class="col-lg-5 auth-side d-none d-lg-flex">
+            <div>
+              <span class="brand-mark mb-4" style="background:#fff;color:var(--ag-primary);box-shadow:none;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 21V10"/>
+                  <path d="M12 12c-.5-3.5-3-6.2-7.2-6.9-.7 4.2 1.6 7.2 7.2 7.2z"/>
+                  <path d="M12 15c.7-3.4 3.3-6 7.7-6.8.5 3.8-1.8 6.8-7.7 6.8z"/>
+                </svg>
+              </span>
+              <h2 class="mb-3">Welcome back to AGRICONNECT</h2>
+              <p class="mb-4">Sign in to continue managing your crops, advisory history and scheme matches.</p>
+
+              <div class="auth-point">
+                <i class="bi bi-basket2" aria-hidden="true"></i>
+                <p><strong>Marketplace</strong><br>Track and update your crop listings.</p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-flower2" aria-hidden="true"></i>
+                <p><strong>Crop Advisory</strong><br>Revisit the guidance you received earlier.</p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-bank2" aria-hidden="true"></i>
+                <p><strong>Subsidy Awareness</strong><br>Review schemes that matched your profile.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================== Form =============================== -->
+          <div class="col-lg-7 bg-white">
+            <div class="auth-form-pad">
+
+              <div class="mb-4">
+                <h1 class="h3 mb-1">Login to your account</h1>
+                <p class="text-muted-ag mb-0">Use the email or username registered with your farmer profile.</p>
+              </div>
+
+              <form method="post" action="{{ url_for('login') }}" novalidate data-ag-validate
+                    aria-describedby="loginHelp">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+                {# Preserve ?next= so the user returns where they intended #}
+                {% if request and request.args.get('next') %}
+                  <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                {% endif %}
+
+                <!-- ------------------------ Email / username ---------------------- -->
+                <div class="mb-3">
+                  <label for="email" class="form-label">
+                    Email or username <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0" style="border-color:var(--ag-border-strong);border-radius:var(--ag-radius-sm) 0 0 var(--ag-radius-sm);">
+                      <i class="bi bi-person text-muted" aria-hidden="true"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 ps-0 {% if errors and errors.email %}is-invalid{% endif %}"
+                           id="email" name="email"
+                           value="{{ fd.get('email', '') }}"
+                           placeholder="you@example.com or farmer_name"
+                           autocomplete="username" required
+                           {% if errors and errors.email %}aria-invalid="true" aria-describedby="emailError"{% endif %}>
+                  </div>
+                  {% if errors and errors.email %}
+                    <div class="ag-field-error" id="emailError">{{ errors.email }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ----------------------------- Password -------------------------- -->
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label for="password" class="form-label mb-1">
+                      Password <span class="required-star" aria-hidden="true">*</span>
+                    </label>
+                  </div>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0" style="border-color:var(--ag-border-strong);border-radius:var(--ag-radius-sm) 0 0 var(--ag-radius-sm);">
+                      <i class="bi bi-lock text-muted" aria-hidden="true"></i>
+                    </span>
+                    <input type="password" class="form-control border-start-0 ps-0 {% if errors and errors.password %}is-invalid{% endif %}"
+                           id="password" name="password"
+                           placeholder="Enter your password"
+                           autocomplete="current-password" required
+                           {% if errors and errors.password %}aria-invalid="true" aria-describedby="passwordError"{% endif %}>
+                    <button class="btn btn-password-toggle" type="button"
+                            data-ag-toggle-password="password" title="Show password">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                      <span class="visually-hidden">Show password</span>
+                    </button>
+                  </div>
+                  {% if errors and errors.password %}
+                    <div class="ag-field-error" id="passwordError">{{ errors.password }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- --------------------------- Remember me ------------------------- -->
+                {% if supports_remember_me|default(true, true) %}
+                <div class="form-check mb-4">
+                  <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember"
+                         {% if fd.get('remember') %}checked{% endif %}>
+                  <label class="form-check-label" for="remember">Keep me signed in on this device</label>
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-ag-primary w-100 py-2">
+                  <span class="btn-label"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Login</span>
+                </button>
+
+                <p class="text-center text-muted-ag mt-3 mb-0" id="loginHelp">
+                  New to AGRICONNECT?
+                  <a href="{{ url_for('register') }}">Create a farmer profile</a>
+                </p>
+              </form>
+
+              {# Shown only when the demo/preview server sets demo_mode = True #}
+              {% if demo_mode and demo_credentials %}
+                <div class="info-note mt-4">
+                  <i class="bi bi-info-circle" aria-hidden="true"></i>
+                  <strong>Demo preview:</strong> sign in with
+                  <code>{{ demo_credentials.email }}</code> / <code>{{ demo_credentials.password }}</code>
+                  (or register a new account). This hint disappears when
+                  <code>demo_mode</code> is not set.
+                </div>
+              {% endif %}
+
+              <p class="text-muted-ag small mt-4 mb-0">
+                <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                Credentials are always checked on the server. Nothing is stored
+                in the browser.
+              </p>
+
+            </div>
+          </div>
+        </div>
+
+        <p class="text-center mt-3 mb-0">
+          <a class="btn btn-link btn-link-ag" href="{{ url_for('index') }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to home
+          </a>
+        </p>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found — AGRICONNECT{% endblock %}
+{% block description %}The page you requested could not be found on AGRICONNECT.{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container-xxl">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-xl-7">
+
+        <div class="card card-ag">
+          <div class="card-body p-4 p-lg-5 text-center">
+            <div class="es-icon mx-auto" style="background: var(--ag-warning-soft); color: var(--ag-accent-dark);">
+              <i class="bi bi-compass" aria-hidden="true"></i>
+            </div>
+
+            <p class="small-caps text-muted-ag mb-1">Error 404</p>
+            <h1 class="h3 mb-2">We could not find that page</h1>
+            <p class="text-muted-ag mb-4">
+              The page you were looking for may have been moved, renamed, or it
+              may never have existed. Try one of the links below to get back on track.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
+              <a href="{{ url_for('index') }}" class="btn btn-ag-primary">
+                <i class="bi bi-house-door" aria-hidden="true"></i>Go to Home
+              </a>
+              <a href="{{ url_for('marketplace') }}" class="btn btn-ag-outline">
+                <i class="bi bi-basket2" aria-hidden="true"></i>Marketplace
+              </a>
+              <a href="{{ url_for('crop_advisory') }}" class="btn btn-ag-outline">
+                <i class="bi bi-flower2" aria-hidden="true"></i>Crop Advisory
+              </a>
+              <a href="{{ url_for('subsidy_checker') }}" class="btn btn-ag-outline">
+                <i class="bi bi-bank2" aria-hidden="true"></i>Subsidy Checker
+              </a>
+            </div>
+
+            {% if request and request.path %}
+              <p class="small text-muted-ag mb-0">
+                Requested path: <code>{{ request.path }}</code>
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

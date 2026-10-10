@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Advisory Result — AGRICONNECT{% endblock %}
+{% block description %}Rule-based crop guidance for your AGRICONNECT advisory query, including the rule that matched and recommended next steps.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET /crop-advisory/<int:query_id>
+     Context: query{ id, crop_name, growth_stage, soil_type, symptoms,
+                     irrigation, weather, created_at }
+              advisory{ title, summary, recommendation (str|list),
+                        rule_name, explanation, matched_conditions[],
+                        next_steps[], caution, no_match (bool), severity }
+   Nothing here invents a diagnosis or a confidence percentage — every value
+   comes from the rule-based advisory engine on the server. #}
+
+{% block content %}
+
+<!-- ============================ PAGE HEADER ============================ -->
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a>
+          <span class="mx-1" aria-hidden="true">/</span>
+          <a href="{{ url_for('crop_advisory') }}">Crop Advisory</a>
+          <span class="mx-1" aria-hidden="true">/</span> Result
+        </nav>
+        <h1 class="mb-2">
+          <i class="bi bi-clipboard-check text-success" aria-hidden="true"></i>
+          Crop Advisory Result
+        </h1>
+        <div class="d-flex flex-wrap gap-2">
+          {% if query and query.crop_name %}<span class="badge-soft"><i class="bi bi-flower2" aria-hidden="true"></i> {{ query.crop_name }}</span>{% endif %}
+          {% if query and query.growth_stage %}<span class="badge-soft"><i class="bi bi-bar-chart-steps" aria-hidden="true"></i> {{ query.growth_stage }}</span>{% endif %}
+          {% if query and query.soil_type %}<span class="badge-soft"><i class="bi bi-layers" aria-hidden="true"></i> {{ query.soil_type }} soil</span>{% endif %}
+          {% if query and query.created_at %}<span class="badge-soft badge-soft-neutral"><i class="bi bi-clock" aria-hidden="true"></i> {{ query.created_at }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <button type="button" class="btn btn-ag-light" onclick="window.print();return false;">
+          <i class="bi bi-printer" aria-hidden="true"></i>Print / Save
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+    <div class="row g-4">
+
+      <!-- ============================ MAIN RESULT ======================== -->
+      <div class="col-lg-8">
+
+        {% if advisory %}
+
+          {% if advisory.no_match %}
+            {# ------------------------- No rule matched ------------------------ #}
+            <div class="info-note mb-4 d-flex gap-3">
+              <i class="bi bi-search fs-4 flex-shrink-0" aria-hidden="true"></i>
+              <div>
+                <h2 class="h6 mb-1">No advisory rule matched your description</h2>
+                <p class="mb-0">
+                  The rule set configured in this application does not contain a
+                  rule for this combination of crop, stage, soil and symptoms.
+                  AGRICONNECT does not guess when no rule matches — please refine
+                  your description or consult your local agriculture officer.
+                </p>
+              </div>
+            </div>
+          {% else %}
+
+            {# ------------------------- Recommendation ------------------------- #}
+            <div class="result-block block-recommendation mb-4">
+              <h2>
+                <i class="bi bi-flower2 text-success" aria-hidden="true"></i>
+                {{ advisory.title or 'Advisory guidance' }}
+              </h2>
+              {% if advisory.severity %}
+                <span class="badge-soft badge-soft-warning mb-2">
+                  <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ advisory.severity }}
+                </span>
+              {% endif %}
+
+              {% if advisory.recommendation is string %}
+                <p class="mb-0">{{ advisory.recommendation }}</p>
+              {% elif advisory.recommendation %}
+                <ul class="scheme-list">
+                  {% for item in advisory.recommendation %}<li>{{ item }}</li>{% endfor %}
+                </ul>
+              {% elif advisory.summary %}
+                <p class="mb-0">{{ advisory.summary }}</p>
+              {% endif %}
+            </div>
+
+            {# --------------------------- Explanation -------------------------- #}
+            <div class="result-block block-explanation mb-4">
+              <h2>
+                <i class="bi bi-diagram-3 text-primary" aria-hidden="true"></i>
+                Why this rule matched
+              </h2>
+              <p class="mb-2">
+                {{ advisory.explanation or 'This guidance was produced by a rule stored in the advisory rule set. The conditions below were satisfied by your answers.' }}
+              </p>
+              {% if advisory.rule_name %}
+                <div class="mb-2">
+                  <span class="small-caps text-muted-ag d-block mb-1">Rule applied</span>
+                  <span class="rule-chip"><i class="bi bi-bezier2" aria-hidden="true"></i> {{ advisory.rule_name }}</span>
+                </div>
+              {% endif %}
+              {% if advisory.matched_conditions %}
+                <div>
+                  <span class="small-caps text-muted-ag d-block mb-1">Conditions you reported that matched</span>
+                  {% for condition in advisory.matched_conditions %}
+                    <span class="rule-chip"><i class="bi bi-check2" aria-hidden="true"></i> {{ condition }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            {# ---------------------------- Next steps -------------------------- #}
+            {% if advisory.next_steps %}
+              <div class="result-block block-steps mb-4">
+                <h2>
+                  <i class="bi bi-list-check text-warning" aria-hidden="true"></i>
+                  Recommended next steps
+                </h2>
+                <ol class="steps-list">
+                  {% for step in advisory.next_steps %}<li>{{ step }}</li>{% endfor %}
+                </ol>
+              </div>
+            {% endif %}
+
+          {% endif %}
+
+          {# ------------------------------ Caution ----------------------------- #}
+          <div class="result-block block-caution">
+            <h2>
+              <i class="bi bi-exclamation-triangle-fill text-danger" aria-hidden="true"></i>
+              Important caution
+            </h2>
+            <p class="mb-0">
+              {{ advisory.caution or 'This guidance is informational and based on simplified rules. Field conditions vary widely — confirm with a local agriculture officer, Krishi Vigyan Kendra or a qualified agronomist before applying fertilisers or pesticides. AGRICONNECT does not guarantee any particular agricultural outcome.' }}
+            </p>
+          </div>
+
+        {% else %}
+          {% with es_icon='bi-clipboard-data',
+                   es_title='No advisory result found',
+                   es_text='This advisory query could not be found, or the result has expired. Please submit your crop details again.',
+                   es_action_label='Submit another query',
+                   es_action_url=url_for('crop_advisory') %}
+            {% include 'partials/empty_state.html' %}
+          {% endwith %}
+        {% endif %}
+
+        <!-- --------------------------- Actions ---------------------------- -->
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <a href="{{ url_for('crop_advisory') }}" class="btn btn-ag-primary">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i>Submit Another Query
+          </a>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-ag-outline">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i>Back to Dashboard
+          </a>
+        </div>
+
+      </div>
+
+      <!-- =========================== QUERY SUMMARY ======================= -->
+      <div class="col-lg-4">
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3">
+            <h2 class="h6 mb-0"><i class="bi bi-input-cursor-text text-success" aria-hidden="true"></i> What you reported</h2>
+          </div>
+          <div class="card-body">
+            {% if query %}
+              <div class="detail-row">
+                <span class="dr-label">Crop</span>
+                <span class="dr-value">{{ query.crop_name or '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="dr-label">Growth stage</span>
+                <span class="dr-value">{{ query.growth_stage or '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="dr-label">Soil type</span>
+                <span class="dr-value">{{ query.soil_type or '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="dr-label">Irrigation</span>
+                <span class="dr-value">{{ query.irrigation or '—' }}</span>
+              </div>
+              {% if query.weather %}
+                <div class="detail-row">
+                  <span class="dr-label">Weather</span>
+                  <span class="dr-value">{{ query.weather }}</span>
+                </div>
+              {% endif %}
+
+              <div class="mt-3">
+                <span class="small-caps text-muted-ag d-block mb-1">Reported symptoms</span>
+                <blockquote class="symptom-quote mb-0">
+                  {{ query.symptoms or 'No symptoms were described.' }}
+                </blockquote>
+              </div>
+            {% else %}
+              <p class="text-muted-ag mb-0">The original query details are not available.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card card-ag mt-3">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-info-circle text-success" aria-hidden="true"></i> About this result</h2>
+            <ul class="small text-muted-ag mb-0 ps-3">
+              <li>Produced by transparent, rule-based logic — not a trained AI model.</li>
+              <li>No confidence score is shown because none is calculated.</li>
+              <li>Rules can be reviewed and edited in the advisory rule set.</li>
+              <li>Your query is stored only if advisory history is enabled.</li>
+            </ul>
+          </div>
+        </div>
+
+        {% if related_rules %}
+          <div class="card card-ag mt-3">
+            <div class="card-body">
+              <h2 class="h6"><i class="bi bi-collection text-success" aria-hidden="true"></i> Related rules in the rule set</h2>
+              <ul class="small text-muted-ag mb-0 ps-3">
+                {% for rule in related_rules %}
+                  <li>{{ rule.name }}{% if rule.summary %} — {{ rule.summary }}{% endif %}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

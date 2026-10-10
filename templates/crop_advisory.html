@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Advisory Assistant — AGRICONNECT{% endblock %}
+{% block description %}Describe your crop, growth stage, soil and symptoms to receive explainable, rule-based crop guidance from AGRICONNECT.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET/POST /crop-advisory
+     POST fields: crop_name, growth_stage, soil_type, symptoms, irrigation,
+                  weather, csrf_token
+     The backend applies its rule-based advisory engine and redirects to
+     advisory_result(query_id=...) or re-renders this page with errors{}.
+     Optional context lists: crops[], growth_stages[], soil_types[],
+     irrigation_options[], weather_options[], form_data{}, default_query{} #}
+
+{% set qd = form_data if form_data else (default_query if default_query else {}) %}
+{% set stage_options = growth_stages if growth_stages else ['Seedling', 'Vegetative', 'Flowering', 'Fruiting / Pod filling', 'Maturity / Harvest'] %}
+{% set soil_options = soil_types if soil_types else ['Sandy', 'Loamy', 'Clay', 'Black (regur)', 'Red', 'Laterite', 'Alluvial'] %}
+{% set irrigation_opts = irrigation_options if irrigation_options else ['Adequate irrigation', 'Limited irrigation', 'Rainfed only', 'No irrigation available'] %}
+{% set weather_opts = weather_options if weather_options else ['Normal', 'Hot and dry', 'Humid', 'Heavy rainfall', 'Cool / cold', 'Not sure'] %}
+
+{% block content %}
+
+<!-- ============================ PAGE HEADER ============================ -->
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a> <span class="mx-1" aria-hidden="true">/</span> Crop Advisory
+        </nav>
+        <h1 class="mb-1">Crop Advisory Assistant</h1>
+        <p class="text-muted-ag mb-0">
+          Share information about your crop to receive relevant guidance based on
+          the available advisory rules.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">
+          <i class="bi bi-grid-1x2" aria-hidden="true"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+    <div class="row g-4">
+
+      <!-- ============================== FORM ============================== -->
+      <div class="col-lg-8">
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3">
+            <h2 class="h6 mb-0"><i class="bi bi-clipboard-check text-success" aria-hidden="true"></i> Tell us about your crop</h2>
+          </div>
+
+          <div class="card-body p-4">
+            <form method="post" action="{{ url_for('crop_advisory') }}" novalidate data-ag-validate>
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+              {% if errors and errors.general %}
+                <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
+              {% endif %}
+
+              <div class="row g-3">
+                <!-- --------------------------- Crop name -------------------------- -->
+                <div class="col-md-6">
+                  <label for="crop_name" class="form-label">
+                    Crop name <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" class="form-control {% if errors and errors.crop_name %}is-invalid{% endif %}"
+                         id="crop_name" name="crop_name"
+                         value="{{ qd.get('crop_name', user.preferred_crop if user and user.preferred_crop else '') }}"
+                         placeholder="e.g. Paddy, Cotton, Tomato"
+                         list="cropSuggestions" maxlength="60" required
+                         {% if errors and errors.crop_name %}aria-invalid="true" aria-describedby="crop_nameError"{% endif %}>
+                  {% if crops %}
+                    <datalist id="cropSuggestions">
+                      {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
+                    </datalist>
+                  {% endif %}
+                  <div class="form-text">The crop you need guidance for.</div>
+                  {% if errors and errors.crop_name %}
+                    <div class="ag-field-error" id="crop_nameError">{{ errors.crop_name }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------- Growth stage ------------------------- -->
+                <div class="col-md-6">
+                  <label for="growth_stage" class="form-label">
+                    Crop growth stage <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <select class="form-select {% if errors and errors.growth_stage %}is-invalid{% endif %}"
+                          id="growth_stage" name="growth_stage" required
+                          {% if errors and errors.growth_stage %}aria-invalid="true" aria-describedby="growth_stageError"{% endif %}>
+                    <option value="" {% if not qd.get('growth_stage') %}selected disabled{% endif %}>Select growth stage</option>
+                    {% for stage in stage_options %}
+                      <option value="{{ stage }}" {% if qd.get('growth_stage', '') == stage %}selected{% endif %}>{{ stage }}</option>
+                    {% endfor %}
+                  </select>
+                  {% if errors and errors.growth_stage %}
+                    <div class="ag-field-error" id="growth_stageError">{{ errors.growth_stage }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- --------------------------- Soil type -------------------------- -->
+                <div class="col-md-6">
+                  <label for="soil_type" class="form-label">
+                    Soil type <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <select class="form-select {% if errors and errors.soil_type %}is-invalid{% endif %}"
+                          id="soil_type" name="soil_type" required
+                          {% if errors and errors.soil_type %}aria-invalid="true" aria-describedby="soil_typeError"{% endif %}>
+                    <option value="" {% if not qd.get('soil_type') %}selected disabled{% endif %}>Select soil type</option>
+                    {% for soil in soil_options %}
+                      <option value="{{ soil }}" {% if qd.get('soil_type', '') == soil %}selected{% endif %}>{{ soil }}</option>
+                    {% endfor %}
+                  </select>
+                  {% if errors and errors.soil_type %}
+                    <div class="ag-field-error" id="soil_typeError">{{ errors.soil_type }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------- Irrigation --------------------------- -->
+                <div class="col-md-6">
+                  <label for="irrigation" class="form-label">
+                    Irrigation availability <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <select class="form-select {% if errors and errors.irrigation %}is-invalid{% endif %}"
+                          id="irrigation" name="irrigation" required
+                          {% if errors and errors.irrigation %}aria-invalid="true" aria-describedby="irrigationError"{% endif %}>
+                    <option value="" {% if not qd.get('irrigation') %}selected disabled{% endif %}>Select irrigation availability</option>
+                    {% for option in irrigation_opts %}
+                      <option value="{{ option }}" {% if qd.get('irrigation', '') == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                  {% if errors and errors.irrigation %}
+                    <div class="ag-field-error" id="irrigationError">{{ errors.irrigation }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- --------------------- Weather conditions ----------------------- -->
+                {% if collect_weather|default(true, true) %}
+                <div class="col-md-6">
+                  <label for="weather" class="form-label">
+                    Recent weather conditions
+                    <span class="text-muted-ag fw-normal">(optional)</span>
+                  </label>
+                  <select class="form-select" id="weather" name="weather">
+                    <option value="">Select weather condition</option>
+                    {% for option in weather_opts %}
+                      <option value="{{ option }}" {% if qd.get('weather', '') == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="form-text">Some advisory rules consider recent weather.</div>
+                </div>
+                {% endif %}
+
+                <!-- ---------------------------- Symptoms -------------------------- -->
+                <div class="{% if collect_weather|default(true, true) %}col-md-6{% else %}col-12{% endif %}">
+                  <label for="symptoms" class="form-label">
+                    Crop symptoms or visible condition
+                    <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <textarea class="form-control {% if errors and errors.symptoms %}is-invalid{% endif %}"
+                            id="symptoms" name="symptoms" rows="5" maxlength="600"
+                            data-ag-counter="symptomsCount"
+                            placeholder="e.g. Leaves turning yellow from the tip, stunted growth after heavy rain…"
+                            required
+                            {% if errors and errors.symptoms %}aria-invalid="true" aria-describedby="symptomsError symptomsHelp symptomsCount"{% else %}aria-describedby="symptomsHelp symptomsCount"{% endif %}>{{ qd.get('symptoms', '') }}</textarea>
+                  <div class="d-flex justify-content-between">
+                    <div class="form-text mb-0" id="symptomsHelp">
+                      Describe colour changes, spots, wilting, pests, or nothing unusual.
+                    </div>
+                    <small class="text-muted-ag" id="symptomsCount" aria-live="polite"></small>
+                  </div>
+                  {% if errors and errors.symptoms %}
+                    <div class="ag-field-error" id="symptomsError">{{ errors.symptoms }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">Cancel</a>
+                <button type="submit" class="btn btn-ag-primary px-4">
+                  <span class="btn-label"><i class="bi bi-flower2" aria-hidden="true"></i>Get Crop Guidance</span>
+                </button>
+              </div>
+
+              <p class="text-muted-ag small mt-3 mb-0">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                This assistant uses simple, transparent rules configured in the
+                application. It is not a trained AI model and does not provide a
+                laboratory diagnosis.
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ SIDE HELP =========================== -->
+      <div class="col-lg-4">
+        <div class="card card-ag overflow-hidden mb-3">
+          <img src="{{ url_for('static', filename='images/advisory-illustration.jpg') }}"
+               alt="A young green crop sprouting from fertile soil" class="img-fluid" loading="lazy"
+               style="height:170px;object-fit:cover;width:100%;">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-lightbulb text-warning" aria-hidden="true"></i> Tips for better guidance</h2>
+            <ul class="small text-muted-ag mb-0 ps-3">
+              <li>Be specific: “yellow leaves near the base” beats “leaf problem”.</li>
+              <li>Mention when the problem started and how fast it spreads.</li>
+              <li>Note recent fertiliser, pesticide or rainfall events.</li>
+              <li>Include the field area affected, if you know it.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card card-ag">
+          <div class="card-body">
+            <h2 class="h6"><i class="bi bi-diagram-3 text-success" aria-hidden="true"></i> How the guidance is produced</h2>
+            <ol class="small text-muted-ag mb-0 ps-3">
+              <li>Your answers are matched against the advisory rules stored in the database.</li>
+              <li>Each rule contains a condition, the guidance text and the reason for it.</li>
+              <li>The result page shows the guidance <strong>and</strong> the rule that produced it.</li>
+              <li>If nothing matches, you will be told so — no guess is invented.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="disclaimer-note mt-3">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          <strong>Please note:</strong> advisory output is informational. For
+          serious or spreading problems, contact your local agriculture officer
+          or Krishi Vigyan Kendra before applying chemicals.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

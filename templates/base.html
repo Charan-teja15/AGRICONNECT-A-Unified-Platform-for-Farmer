@@ -1,0 +1,84 @@
+{# =========================================================================
+   AGRICONNECT — base.html
+   Shared layout for every page. All templates extend this file.
+
+   Blocks available to child templates
+     title        : full <title> text
+     description  : meta description
+     body_class   : extra classes on <body>
+     styles       : page specific <style>/<link>
+     content      : main page content
+     scripts      : page specific JavaScript
+
+   Context expected from Flask (all optional / have safe defaults)
+     current_user : Flask-Login user object (or any object with is_authenticated)
+     request      : Flask request object (used for active nav highlighting)
+     csrf_token() : provided by Flask-WTF / custom CSRF helper in app.py
+     app_name     : application name (default "AGRICONNECT")
+   ========================================================================= #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1B5E20">
+  <meta name="description" content="{% block description %}AGRICONNECT — a unified platform for farmer market access, crop advisory and government subsidy awareness.{% endblock %}">
+  <title>{% block title %}AGRICONNECT — Connecting Farmers to Markets, Knowledge and Government Support{% endblock %}</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+
+  {# --- Vendor CSS (bundled locally in static/vendor so the app works offline) --- #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}">
+  {# --- Project stylesheet --- #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  {% block styles %}{% endblock %}
+</head>
+
+<body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
+
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  {% include 'partials/navbar.html' %}
+
+  <main id="main-content" class="flex-grow-1" tabindex="-1">
+    {# Flash messages render their own container so an empty flash stack
+       never leaves a gap at the top of the page. #}
+    {% include 'partials/flash_messages.html' %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include 'partials/footer.html' %}
+
+  {# ======================================================================
+     Shared confirmation dialog (used by [data-ag-confirm-modal] triggers)
+     ====================================================================== #}
+  <div class="modal fade" id="agConfirmModal" tabindex="-1" aria-labelledby="agConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--ag-radius); border: 1px solid var(--ag-border);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title d-flex align-items-center gap-2" id="agConfirmModalLabel">
+            <i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i>
+            <span data-ag-modal-title>Are you sure?</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p class="mb-0 text-muted-ag" data-ag-modal-body>This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-ag-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-ag-primary" data-ag-modal-confirm>Yes, continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# --- Vendor JS + project JS --- #}
+  <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

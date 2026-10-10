@@ -1,0 +1,115 @@
+{# =========================================================================
+   partials/navbar.html — responsive navigation bar
+   Expects: current_user (Flask-Login), request (Flask request), url_for()
+   Endpoint names are the FLAT names documented in BACKEND_INTEGRATION.md.
+   If your app uses blueprints, change e.g. url_for('marketplace')
+   -> url_for('marketplace.index').
+   ========================================================================= #}
+<nav class="navbar navbar-expand-lg navbar-ag sticky-top" aria-label="Main navigation">
+  <div class="container-xxl">
+    {# ------------------------------ Brand ------------------------------ #}
+    <a class="navbar-brand me-3" href="{{ url_for('index') }}">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21V10"/>
+          <path d="M12 12c-.5-3.5-3-6.2-7.2-6.9-.7 4.2 1.6 7.2 7.2 7.2z"/>
+          <path d="M12 15c.7-3.4 3.3-6 7.7-6.8.5 3.8-1.8 6.8-7.7 6.8z"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name"><span class="agri">AGRI</span><span class="connect">CONNECT</span></span>
+        <span class="brand-tag">Farmer Services Platform</span>
+      </span>
+    </a>
+
+    {# --------------------------- Mobile toggle -------------------------- #}
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link {% if request and request.endpoint == 'index' %}active{% endif %}"
+             href="{{ url_for('index') }}" {% if request and request.endpoint == 'index' %}aria-current="page"{% endif %}>
+            <i class="bi bi-house-door" aria-hidden="true"></i>Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request and request.endpoint in ['marketplace', 'create_listing', 'edit_listing'] %}active{% endif %}"
+             href="{{ url_for('marketplace') }}">
+            <i class="bi bi-basket2" aria-hidden="true"></i>Marketplace
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request and request.endpoint in ['crop_advisory', 'advisory_result'] %}active{% endif %}"
+             href="{{ url_for('crop_advisory') }}">
+            <i class="bi bi-flower2" aria-hidden="true"></i>Crop Advisory
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request and request.endpoint in ['subsidy_checker', 'subsidy_results'] %}active{% endif %}"
+             href="{{ url_for('subsidy_checker') }}">
+            <i class="bi bi-bank2" aria-hidden="true"></i>Subsidy Checker
+          </a>
+        </li>
+        {% if current_user and current_user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link {% if request and request.endpoint == 'dashboard' %}active{% endif %}"
+             href="{{ url_for('dashboard') }}">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+
+      {# --------------------------- Auth area --------------------------- #}
+      <ul class="navbar-nav align-items-lg-center ms-lg-3">
+        {% if current_user and current_user.is_authenticated %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="profileMenu"
+               role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="avatar-circle" aria-hidden="true">{{ (current_user.name or 'F')[:2]|upper }}</span>
+              <span class="d-lg-none">My account</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+              <li>
+                <span class="dropdown-item-text px-3 py-2">
+                  <span class="d-block fw-semibold">{{ current_user.name or 'Farmer' }}</span>
+                  <small class="text-muted-ag d-block text-truncate" style="max-width: 15rem;">{{ current_user.email }}</small>
+                </span>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i>My profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i>Add crop listing</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('marketplace') }}?mine=1"><i class="bi bi-basket2" aria-hidden="true"></i>My listings</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="post" action="{{ url_for('logout') }}" class="px-0">
+                  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                  <button type="submit" class="dropdown-item text-danger">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Log out
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link {% if request and request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">
+              <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Login
+            </a>
+          </li>
+          <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+            <a class="btn btn-ag-primary btn-sm px-3 py-2 w-100 w-lg-auto" href="{{ url_for('register') }}">
+              <i class="bi bi-person-plus" aria-hidden="true"></i>Register
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

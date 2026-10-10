@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Crop Listing — AGRICONNECT{% endblock %}
+{% block description %}Update your AGRICONNECT crop listing details, expected price, availability and contact information.{% endblock %}
+
+{# Backend contract (see BACKEND_INTEGRATION.md)
+     GET/POST /listings/<int:listing_id>/edit
+     Context: listing (existing values), states[], districts[], crops[], units[],
+              errors{}, form_data{}
+     POST fields: crop_name, quantity, unit, expected_price, state, district,
+                  availability_date, description, contact_info, status, csrf_token
+     A separate POST /listings/<id>/delete route handles deletion. #}
+
+{% set fd = form_data if form_data else (listing if listing else {}) %}
+{% set unit_options = units if units else ['quintal', 'kg', 'tonne', 'bag', 'crate', 'dozen'] %}
+{% set status_options = statuses if statuses else [{'value': 'available', 'label': 'Available'}, {'value': 'reserved', 'label': 'Reserved'}, {'value': 'sold', 'label': 'Sold / Closed'}] %}
+
+{% block content %}
+
+<section class="page-header">
+  <div class="container-xxl">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}">Home</a>
+          <span class="mx-1" aria-hidden="true">/</span>
+          <a href="{{ url_for('marketplace') }}">Marketplace</a>
+          <span class="mx-1" aria-hidden="true">/</span> Edit listing
+        </nav>
+        <h1 class="mb-1">Edit Crop Listing</h1>
+        <p class="text-muted-ag mb-0">
+          Update the details of <strong>{{ listing.crop_name if listing else 'your listing' }}</strong>.
+          Changes are visible to buyers immediately.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <a href="{{ url_for('marketplace') }}?mine=1" class="btn btn-ag-light">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to My Listings
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container-xxl">
+    <div class="row g-4 justify-content-center">
+      <div class="col-xl-9">
+
+        <div class="card card-ag">
+          <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h2 class="h6 mb-0"><i class="bi bi-pencil-square text-success" aria-hidden="true"></i> Listing details</h2>
+            {% if listing and listing.created_at %}
+              <span class="badge-soft badge-soft-neutral">Created {{ listing.created_at }}</span>
+            {% endif %}
+          </div>
+
+          <div class="card-body p-4">
+            <form method="post" action="{{ url_for('edit_listing', listing_id=listing.id) }}" novalidate data-ag-validate>
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+              {% if errors and errors.general %}
+                <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
+              {% endif %}
+
+              <div class="row g-3">
+                <!-- --------------------------- Crop name -------------------------- -->
+                <div class="col-md-6">
+                  <label for="crop_name" class="form-label">
+                    Crop name <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" class="form-control {% if errors and errors.crop_name %}is-invalid{% endif %}"
+                         id="crop_name" name="crop_name"
+                         value="{{ fd.get('crop_name', '') }}"
+                         list="cropSuggestions" maxlength="60" required
+                         {% if errors and errors.crop_name %}aria-invalid="true" aria-describedby="crop_nameError"{% endif %}>
+                  {% if crops %}
+                    <datalist id="cropSuggestions">
+                      {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
+                    </datalist>
+                  {% endif %}
+                  {% if errors and errors.crop_name %}
+                    <div class="ag-field-error" id="crop_nameError">{{ errors.crop_name }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ---------------------------- Quantity -------------------------- -->
+                <div class="col-md-3">
+                  <label for="quantity" class="form-label">
+                    Quantity <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <input type="number" class="form-control {% if errors and errors.quantity %}is-invalid{% endif %}"
+                         id="quantity" name="quantity"
+                         value="{{ fd.get('quantity', '') }}"
+                         min="0" step="0.01" inputmode="decimal" required
+                         {% if errors and errors.quantity %}aria-invalid="true" aria-describedby="quantityError"{% endif %}>
+                  {% if errors and errors.quantity %}
+                    <div class="ag-field-error" id="quantityError">{{ errors.quantity }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------------ Unit ---------------------------- -->
+                <div class="col-md-3">
+                  <label for="unit" class="form-label">
+                    Unit <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  <select class="form-select {% if errors and errors.unit %}is-invalid{% endif %}"
+                          id="unit" name="unit" required
+                          {% if errors and errors.unit %}aria-invalid="true" aria-describedby="unitError"{% endif %}>
+                    {% for u in unit_options %}
+                      <option value="{{ u }}" {% if fd.get('unit', 'quintal') == u %}selected{% endif %}>{{ u|capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                  {% if errors and errors.unit %}
+                    <div class="ag-field-error" id="unitError">{{ errors.unit }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------ Expected price ------------------------ -->
+                <div class="col-md-4">
+                  <label for="expected_price" class="form-label">Expected price (₹ per unit)</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white" style="border-color:var(--ag-border-strong);">₹</span>
+                    <input type="number" class="form-control {% if errors and errors.expected_price %}is-invalid{% endif %}"
+                           id="expected_price" name="expected_price"
+                           value="{{ fd.get('expected_price', '') }}"
+                           min="0" step="1" inputmode="numeric"
+                           {% if errors and errors.expected_price %}aria-invalid="true" aria-describedby="expected_priceError"{% endif %}>
+                  </div>
+                  {% if errors and errors.expected_price %}
+                    <div class="ag-field-error" id="expected_priceError">{{ errors.expected_price }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ----------------------- Availability date ---------------------- -->
+                <div class="col-md-4">
+                  <label for="availability_date" class="form-label">Availability date</label>
+                  <input type="date" class="form-control {% if errors and errors.availability_date %}is-invalid{% endif %}"
+                         id="availability_date" name="availability_date"
+                         value="{{ fd.get('availability_date', '') }}"
+                         {% if errors and errors.availability_date %}aria-invalid="true" aria-describedby="availability_dateError"{% endif %}>
+                  {% if errors and errors.availability_date %}
+                    <div class="ag-field-error" id="availability_dateError">{{ errors.availability_date }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------------ Status -------------------------- -->
+                <div class="col-md-4">
+                  <label for="status" class="form-label">Listing status</label>
+                  <select class="form-select {% if errors and errors.status %}is-invalid{% endif %}"
+                          id="status" name="status"
+                          {% if errors and errors.status %}aria-invalid="true" aria-describedby="statusError"{% endif %}>
+                    {% for s in status_options %}
+                      <option value="{{ s.value if s.value else s }}" {% if fd.get('status', 'available') == (s.value if s.value else s) %}selected{% endif %}>
+                        {{ s.label if s.label else s|capitalize }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  {% if errors and errors.status %}
+                    <div class="ag-field-error" id="statusError">{{ errors.status }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- ------------------------ Contact information ------------------ -->
+                <div class="col-md-6">
+                  <label for="contact_info" class="form-label">Contact information</label>
+                  <input type="text" class="form-control {% if errors and errors.contact_info %}is-invalid{% endif %}"
+                         id="contact_info" name="contact_info"
+                         value="{{ fd.get('contact_info', '') }}"
+                         placeholder="Mobile number or email" maxlength="80"
+                         {% if errors and errors.contact_info %}aria-invalid="true" aria-describedby="contact_infoError"{% endif %}>
+                  <div class="form-text">Buyers use this to contact you directly.</div>
+                  {% if errors and errors.contact_info %}
+                    <div class="ag-field-error" id="contact_infoError">{{ errors.contact_info }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- --------------------------- Location -------------------------- -->
+                <div class="col-md-3">
+                  <label for="state" class="form-label">
+                    State <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  {% if states %}
+                    <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}"
+                            id="state" name="state" required
+                            {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                      <option value="" {% if not fd.get('state') %}selected disabled{% endif %}>Select state</option>
+                      {% for s in states %}
+                        <option value="{{ s }}" {% if fd.get('state', '') == s %}selected{% endif %}>{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.state %}is-invalid{% endif %}"
+                           id="state" name="state" value="{{ fd.get('state', '') }}" required
+                           {% if errors and errors.state %}aria-invalid="true" aria-describedby="stateError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.state %}
+                    <div class="ag-field-error" id="stateError">{{ errors.state }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                  <label for="district" class="form-label">
+                    District <span class="required-star" aria-hidden="true">*</span>
+                  </label>
+                  {% if districts %}
+                    <select class="form-select {% if errors and errors.district %}is-invalid{% endif %}"
+                            id="district" name="district" required
+                            {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                      <option value="" {% if not fd.get('district') %}selected disabled{% endif %}>Select district</option>
+                      {% for d in districts %}
+                        <option value="{{ d }}" {% if fd.get('district', '') == d %}selected{% endif %}>{{ d }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="text" class="form-control {% if errors and errors.district %}is-invalid{% endif %}"
+                           id="district" name="district" value="{{ fd.get('district', '') }}" required
+                           {% if errors and errors.district %}aria-invalid="true" aria-describedby="districtError"{% endif %}>
+                  {% endif %}
+                  {% if errors and errors.district %}
+                    <div class="ag-field-error" id="districtError">{{ errors.district }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- --------------------------- Description ----------------------- -->
+                <div class="col-12">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea class="form-control {% if errors and errors.description %}is-invalid{% endif %}"
+                            id="description" name="description"
+                            maxlength="500" rows="4" data-ag-counter="descriptionCount"
+                            {% if errors and errors.description %}aria-invalid="true" aria-describedby="descriptionError descriptionCount"{% else %}aria-describedby="descriptionCount"{% endif %}>{{ fd.get('description', '') }}</textarea>
+                  <div class="d-flex justify-content-between">
+                    <div class="form-text mb-0">Maximum 500 characters.</div>
+                    <small class="text-muted-ag" id="descriptionCount" aria-live="polite"></small>
+                  </div>
+                  {% if errors and errors.description %}
+                    <div class="ag-field-error" id="descriptionError">{{ errors.description }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <hr class="ag-rule my-4">
+
+              <div class="d-flex flex-wrap gap-2 justify-content-between">
+                {# Delete is a separate POST route and always asks for confirmation #}
+                <form method="post" action="{{ url_for('delete_listing', listing_id=listing.id) }}"
+                      onsubmit="return false;">
+                  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                  <button type="button" class="btn btn-outline-danger"
+                          data-ag-confirm-modal="Delete this listing permanently? Buyers will no longer be able to see it."
+                          data-ag-modal-title-text="Delete crop listing"
+                          data-ag-modal-ok="Yes, delete it"
+                          data-ag-modal-ok-class="btn-danger">
+                    <i class="bi bi-trash" aria-hidden="true"></i>Delete Listing
+                  </button>
+                </form>
+
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('marketplace') }}?mine=1" class="btn btn-ag-light">Cancel</a>
+                  <button type="submit" class="btn btn-ag-primary px-4">
+                    <span class="btn-label"><i class="bi bi-check2-circle" aria-hidden="true"></i>Save Changes</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

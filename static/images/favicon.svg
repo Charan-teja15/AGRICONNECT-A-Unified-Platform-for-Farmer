@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AGRICONNECT">
+  <rect width="64" height="64" rx="14" fill="#1B5E20"/>
+  <path d="M32 52V28" fill="none" stroke="#E8F5E9" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 33c-1.2-8-7-14.4-17-15.2C13.2 27.4 20.4 33.6 32 33z" fill="#F9A825"/>
+  <path d="M32 41c1.4-6.6 6-11.4 16-12.6C46.6 36.4 40.2 41 32 41z" fill="#7CB342"/>
+  <path d="M14 56h36" fill="none" stroke="#2E7D32" stroke-width="4" stroke-linecap="round"/>
+</svg>
