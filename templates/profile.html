@@ -21,7 +21,7 @@
     <!-- =========================== PROFILE HERO ========================== -->
     <div class="profile-hero mb-4">
       <div class="d-flex flex-wrap align-items-center gap-3">
-        <div class="profile-avatar-lg" aria-hidden="true">{{ (user.name if user and user.name else 'F')[:2]|upper }}</div>
+        <div class="profile-avatar-lg" aria-hidden="true">{{ (user.name if user and user.name else 'F').slice(0, 2)|upper }}</div>
         <div class="flex-grow-1">
           <h1 class="h4 mb-1">{{ user.name if user and user.name else 'Farmer profile' }}</h1>
           <p class="mb-1" style="color: rgba(255,255,255,.85);">

@@ -74,7 +74,7 @@
 
     {% if listing.farmer_name %}
       <div class="listing-owner mt-auto">
-        <span class="avatar-circle" style="width:26px;height:26px;font-size:.7rem;" aria-hidden="true">{{ listing.farmer_name[:2]|upper }}</span>
+        <span class="avatar-circle" style="width:26px;height:26px;font-size:.7rem;" aria-hidden="true">{{ (listing.farmer_name or 'F').slice(0, 2)|upper }}</span>
         <span class="text-truncate">Listed by {{ listing.farmer_name }}</span>
       </div>
     {% endif %}

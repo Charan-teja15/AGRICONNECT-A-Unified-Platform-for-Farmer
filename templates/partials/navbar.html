@@ -71,7 +71,7 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="profileMenu"
                role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <span class="avatar-circle" aria-hidden="true">{{ (current_user.name or 'F')[:2]|upper }}</span>
+              <span class="avatar-circle" aria-hidden="true">{{ (current_user.name or 'F').slice(0, 2)|upper }}</span>
               <span class="d-lg-none">My account</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">

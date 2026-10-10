@@ -91,15 +91,14 @@
         {% endfor %}
       </div>
     {% else %}
-      {% with es_icon='bi-bank2',
-               es_title='No schemes matched your profile',
-               es_text='No scheme in the configured scheme database matched the details you entered. You can broaden your search by removing the district or crop filters, or verify your land size and try again. Scheme data in this application is limited to what the administrator has configured — absence of a match does not mean you are ineligible for every government programme.',
-               es_action_label='Try Again',
-               es_action_url=url_for('subsidy_checker'),
-               es_secondary_label='Back to Dashboard',
-               es_secondary_url=url_for('dashboard') %}
-        {% include 'partials/empty_state.html' %}
-      {% endwith %}
+      {% set es_icon = 'bi-bank2' %}
+      {% set es_title = 'No schemes matched your profile' %}
+      {% set es_text = 'No scheme in the configured scheme database matched the details you entered. You can broaden your search by removing the district or crop filters, or verify your land size and try again. Scheme data in this application is limited to what the administrator has configured — absence of a match does not mean you are ineligible for every government programme.' %}
+      {% set es_action_label = 'Try Again' %}
+      {% set es_action_url = url_for('subsidy_checker') %}
+      {% set es_secondary_label = 'Back to Dashboard' %}
+      {% set es_secondary_url = url_for('dashboard') %}
+      {% include 'partials/empty_state.html' %}
     {% endif %}
 
     <!-- -------------------------- Bottom actions ------------------------- -->

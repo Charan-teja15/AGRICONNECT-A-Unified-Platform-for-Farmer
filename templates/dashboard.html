@@ -49,7 +49,7 @@
           <div class="card card-ag mb-3">
             <div class="card-body text-center">
               <div class="profile-avatar-lg mx-auto mb-2" style="background:var(--ag-light);color:var(--ag-primary);">
-                {{ (user.name if user and user.name else 'F')[:2]|upper }}
+                {{ (user.name if user and user.name else 'F').slice(0, 2)|upper }}
               </div>
               <h2 class="h6 mb-0">{{ user.name if user and user.name else 'Farmer' }}</h2>
               <p class="text-muted-ag small mb-2 text-truncate">{{ user.email if user else '' }}</p>
@@ -260,13 +260,12 @@
                     </div>
                   {% endfor %}
                 {% else %}
-                  {% with es_icon='bi-basket2',
-                           es_title='No crop listings yet',
-                           es_text='Publish your first crop listing so buyers in your district can find your harvest.',
-                           es_action_label='Add Crop Listing',
-                           es_action_url=url_for('create_listing') %}
-                    {% include 'partials/empty_state.html' %}
-                  {% endwith %}
+                  {% set es_icon = 'bi-basket2' %}
+                  {% set es_title = 'No crop listings yet' %}
+                  {% set es_text = 'Publish your first crop listing so buyers in your district can find your harvest.' %}
+                  {% set es_action_label = 'Add Crop Listing' %}
+                  {% set es_action_url = url_for('create_listing') %}
+                  {% include 'partials/empty_state.html' %}
                 {% endif %}
               </div>
             </div>
@@ -300,13 +299,12 @@
                     </div>
                   {% endfor %}
                 {% else %}
-                  {% with es_icon='bi-flower2',
-                           es_title='No advisory queries yet',
-                           es_text='Describe your crop condition and AGRICONNECT will show rule-based guidance with the reason for each suggestion.',
-                           es_action_label='Get Crop Advice',
-                           es_action_url=url_for('crop_advisory') %}
-                    {% include 'partials/empty_state.html' %}
-                  {% endwith %}
+                  {% set es_icon = 'bi-flower2' %}
+                  {% set es_title = 'No advisory queries yet' %}
+                  {% set es_text = 'Describe your crop condition and AGRICONNECT will show rule-based guidance with the reason for each suggestion.' %}
+                  {% set es_action_label = 'Get Crop Advice' %}
+                  {% set es_action_url = url_for('crop_advisory') %}
+                  {% include 'partials/empty_state.html' %}
                 {% endif %}
               </div>
             </div>

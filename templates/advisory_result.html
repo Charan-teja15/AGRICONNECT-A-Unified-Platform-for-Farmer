@@ -146,13 +146,12 @@
           </div>
 
         {% else %}
-          {% with es_icon='bi-clipboard-data',
-                   es_title='No advisory result found',
-                   es_text='This advisory query could not be found, or the result has expired. Please submit your crop details again.',
-                   es_action_label='Submit another query',
-                   es_action_url=url_for('crop_advisory') %}
-            {% include 'partials/empty_state.html' %}
-          {% endwith %}
+          {% set es_icon = 'bi-clipboard-data' %}
+          {% set es_title = 'No advisory result found' %}
+          {% set es_text = 'This advisory query could not be found, or the result has expired. Please submit your crop details again.' %}
+          {% set es_action_label = 'Submit another query' %}
+          {% set es_action_url = url_for('crop_advisory') %}
+          {% include 'partials/empty_state.html' %}
         {% endif %}
 
         <!-- --------------------------- Actions ---------------------------- -->
