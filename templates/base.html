@@ -17,7 +17,7 @@
      app_name     : application name (default "AGRICONNECT")
    ========================================================================= #}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang|default('en') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -38,11 +38,9 @@
 
 <body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
 
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-
   {% include 'partials/navbar.html' %}
 
-  <main id="main-content" class="flex-grow-1" tabindex="-1">
+  <main class="flex-grow-1">
     {# Flash messages render their own container so an empty flash stack
        never leaves a gap at the top of the page. #}
     {% include 'partials/flash_messages.html' %}
@@ -75,8 +73,14 @@
     </div>
   </div>
 
-  {# --- Vendor JS + project JS --- #}
+  {# --- Vendor JS + i18n + project JS --- #}
+  <script>
+    window.AG_TRANSLATIONS = {{ translations_json|safe if translations_json else '{}' }};
+    window.AG_CURRENT_LANG = "{{ current_lang|default('en') }}";
+  </script>
   <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/LanguageSelector.js') }}"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
   {% block scripts %}{% endblock %}

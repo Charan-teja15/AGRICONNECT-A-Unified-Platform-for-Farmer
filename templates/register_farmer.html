@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('register.farmerFormTitle') }} — {{ t('appName') }}{% endblock %}
+{% block description %}{{ t('register.farmerFormSubtitle') }}{% endblock %}
+{% block body_class %}bg-light-green{% endblock %}
+
+{% set fd = form_data if form_data else (request.form if request else {}) %}
+
+{% block content %}
+<section class="auth-wrapper py-4 py-lg-5">
+  <div class="container-xxl">
+    <div class="row justify-content-center">
+      <div class="col-xl-11 col-lg-12">
+
+        <div class="auth-card row g-0">
+
+          <!-- Side panel -->
+          <div class="col-lg-5 auth-side d-none d-lg-flex">
+            <div>
+              <span class="brand-mark mb-4" style="background:#fff;color:var(--ag-primary);box-shadow:none;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 21V10"/>
+                  <path d="M12 12c-.5-3.5-3-6.2-7.2-6.9-.7 4.2 1.6 7.2 7.2 7.2z"/>
+                  <path d="M12 15c.7-3.4 3.3-6 7.7-6.8.5 3.8-1.8 6.8-7.7 6.8z"/>
+                </svg>
+              </span>
+              <span class="badge bg-white text-success px-3 py-1 mb-3 fw-bold" data-i18n="register.farmerCardTitle">{{ t('register.farmerCardTitle') }}</span>
+              <h2 class="mb-3" data-i18n="register.farmerFormTitle">{{ t('register.farmerFormTitle') }}</h2>
+              <p class="mb-4" data-i18n="register.farmerFormSubtitle">{{ t('register.farmerFormSubtitle') }}</p>
+
+              <div class="auth-point">
+                <i class="bi bi-basket2" aria-hidden="true"></i>
+                <p><strong data-i18n="home.feat1Title">{{ t('home.feat1Title') }}</strong><br><span data-i18n="home.feat1Desc">{{ t('home.feat1Desc') }}</span></p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-flower2" aria-hidden="true"></i>
+                <p><strong data-i18n="home.feat2Title">{{ t('home.feat2Title') }}</strong><br><span data-i18n="home.feat2Desc">{{ t('home.feat2Desc') }}</span></p>
+              </div>
+              <div class="auth-point">
+                <i class="bi bi-bank2" aria-hidden="true"></i>
+                <p><strong data-i18n="home.feat3Title">{{ t('home.feat3Title') }}</strong><br><span data-i18n="home.feat3Desc">{{ t('home.feat3Desc') }}</span></p>
+              </div>
+
+              <div class="mt-4 pt-3 border-top border-white border-opacity-25">
+                <p class="small text-white-50 mb-0">
+                  <span data-i18n="register.buyerCardTitle">{{ t('register.buyerCardTitle') }}</span>? <a href="{{ url_for('register_buyer') }}" class="text-white text-decoration-underline fw-bold" data-i18n="register.buyerCardBtn">{{ t('register.buyerCardBtn') }}</a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <div class="col-lg-7 bg-white">
+            <div class="auth-form-pad">
+
+              <div class="mb-4 d-flex justify-content-between align-items-start">
+                <div>
+                  <h1 class="h3 mb-1" data-i18n="register.farmerCardTitle">{{ t('register.farmerCardTitle') }}</h1>
+                  <p class="text-muted-ag mb-0" data-i18n="register.farmerFormSubtitle">{{ t('register.farmerFormSubtitle') }}</p>
+                </div>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-arrow-left me-1"></i><span data-i18n="common.back">{{ t('common.back') }}</span>
+                </a>
+              </div>
+
+              {% if errors and errors.general %}
+                <div class="alert alert-danger" role="alert">{{ errors.general }}</div>
+              {% endif %}
+
+              <form method="post" action="{{ url_for('register_farmer') }}" novalidate data-ag-validate data-ag-check-password-match>
+
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3" data-i18n="profile.title">{{ t('profile.title') }}</legend>
+
+                  <div class="row g-3">
+                    <!-- Full name -->
+                    <div class="col-12">
+                      <label for="full_name" class="form-label" data-i18n="register.fullName">
+                        {{ t('register.fullName') }} <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <input type="text" class="form-control {% if errors and errors.full_name %}is-invalid{% endif %}"
+                             id="full_name" name="full_name" value="{{ fd.get('full_name', '') }}"
+                             data-i18n-placeholder="register.fullName" placeholder="{{ t('register.fullName') }}" autocomplete="name" maxlength="80" required
+                             {% if errors and errors.full_name %}aria-invalid="true" aria-describedby="full_nameError"{% endif %}>
+                      {% if errors and errors.full_name %}<div class="ag-field-error" id="full_nameError">{{ errors.full_name }}</div>{% endif %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6">
+                      <label for="email" class="form-label" data-i18n="register.email">
+                        {{ t('register.email') }} <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <input type="email" class="form-control {% if errors and errors.email %}is-invalid{% endif %}"
+                             id="email" name="email" value="{{ fd.get('email', '') }}"
+                             data-i18n-placeholder="register.email" placeholder="name@example.com" autocomplete="email" required
+                             {% if errors and errors.email %}aria-invalid="true" aria-describedby="emailError"{% endif %}>
+                      {% if errors and errors.email %}<div class="ag-field-error" id="emailError">{{ errors.email }}</div>{% endif %}
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6">
+                      <label for="phone" class="form-label" data-i18n="register.phone">
+                        {{ t('register.phone') }} <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <input type="tel" class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+                             id="phone" name="phone" value="{{ fd.get('phone', '') }}"
+                             placeholder="9876543210" inputmode="numeric" required
+                             {% if errors and errors.phone %}aria-invalid="true" aria-describedby="phoneError"{% endif %}>
+                      {% if errors and errors.phone %}<div class="ag-field-error" id="phoneError">{{ errors.phone }}</div>{% endif %}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-md-6">
+                      <label for="password" class="form-label" data-i18n="register.password">
+                        {{ t('register.password') }} <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <div class="input-group">
+                        <input type="password" class="form-control {% if errors and errors.password %}is-invalid{% endif %}"
+                               id="password" name="password" required autocomplete="new-password">
+                        <button class="btn btn-password-toggle" type="button" data-ag-toggle-password="password" data-i18n-title="common.showPassword" title="{{ t('common.showPassword') }}">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                      {% if errors and errors.password %}<div class="ag-field-error" id="passwordError">{{ errors.password }}</div>{% endif %}
+                    </div>
+
+                    <!-- Confirm password -->
+                    <div class="col-md-6">
+                      <label for="confirm_password" class="form-label" data-i18n="register.confirmPassword">
+                        {{ t('register.confirmPassword') }} <span class="required-star" aria-hidden="true">*</span>
+                      </label>
+                      <div class="input-group">
+                        <input type="password" class="form-control {% if errors and errors.confirm_password %}is-invalid{% endif %}"
+                               id="confirm_password" name="confirm_password" required autocomplete="new-password">
+                        <button class="btn btn-password-toggle" type="button" data-ag-toggle-password="confirm_password" data-i18n-title="common.showPassword" title="{{ t('common.showPassword') }}">
+                          <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                      {% if errors and errors.confirm_password %}<div class="ag-field-error" id="confirm_passwordError">{{ errors.confirm_password }}</div>{% endif %}
+                    </div>
+                  </div>
+                </fieldset>
+
+                <!-- Location details -->
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3" data-i18n="register.location">{{ t('register.location') }}</legend>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label for="village" class="form-label" data-i18n="register.village">{{ t('register.village') }} <span class="required-star">*</span></label>
+                      <input type="text" class="form-control" id="village" name="village" value="{{ fd.get('village', '') }}" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="district" class="form-label" data-i18n="register.district">{{ t('register.district') }} <span class="required-star">*</span></label>
+                      <input type="text" class="form-control" id="district" name="district" value="{{ fd.get('district', '') }}" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="state" class="form-label" data-i18n="register.state">{{ t('register.state') }} <span class="required-star">*</span></label>
+                      <input type="text" class="form-control" id="state" name="state" value="{{ fd.get('state', '') }}" required>
+                    </div>
+                  </div>
+                </fieldset>
+
+                <!-- Optional agricultural details -->
+                <fieldset class="mb-4">
+                  <legend class="small-caps text-muted-ag mb-3" data-i18n="register.mainCrop">{{ t('register.mainCrop') }}</legend>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="main_crop" class="form-label" data-i18n="register.mainCrop">{{ t('register.mainCrop') }}</label>
+                      <input type="text" class="form-control" id="main_crop" name="main_crop" value="{{ fd.get('main_crop', '') }}" placeholder="e.g. Paddy, Cotton">
+                    </div>
+                    <div class="col-md-6">
+                      <label for="landholding" class="form-label" data-i18n="register.landholding">{{ t('register.landholding') }}</label>
+                      <input type="text" class="form-control" id="landholding" name="landholding" value="{{ fd.get('landholding', '') }}" placeholder="e.g. Small (1-2 Hectares)">
+                    </div>
+                  </div>
+                </fieldset>
+
+                <button type="submit" class="btn btn-ag-primary w-100 py-2">
+                  <span class="btn-label"><i class="bi bi-person-check me-1" aria-hidden="true"></i><span data-i18n="register.submitBtn">{{ t('register.submitBtn') }}</span></span>
+                </button>
+
+                <p class="text-center text-muted-ag mt-3 mb-0">
+                  <span data-i18n="register.alreadyAccount">{{ t('register.alreadyAccount') }}</span>
+                  <a href="{{ url_for('login') }}" data-i18n="nav.login">{{ t('nav.login') }}</a>
+                </p>
+
+              </form>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

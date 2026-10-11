@@ -49,7 +49,7 @@
           <div class="card card-ag mb-3">
             <div class="card-body text-center">
               <div class="profile-avatar-lg mx-auto mb-2" style="background:var(--ag-light);color:var(--ag-primary);">
-                {{ (user.name if user and user.name else 'F').slice(0, 2)|upper }}
+                {{ (user.name if user and user.name else 'F')|initials }}
               </div>
               <h2 class="h6 mb-0">{{ user.name if user and user.name else 'Farmer' }}</h2>
               <p class="text-muted-ag small mb-2 text-truncate">{{ user.email if user else '' }}</p>
@@ -114,7 +114,7 @@
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <div class="stat-value">{{ stats.active_listings|default(0, true) }}</div>
-                  <div class="stat-label">Total active listings</div>
+                  <div class="stat-label">Active crop listings</div>
                 </div>
                 <span class="icon-tile icon-tile-sm"><i class="bi bi-basket2" aria-hidden="true"></i></span>
               </div>
@@ -236,7 +236,7 @@
                         <div class="lr-title text-truncate">{{ listing.crop_name }}</div>
                         <div class="lr-meta">
                           {{ listing.quantity }} {{ listing.unit or 'quintal' }}
-                          {% if listing.expected_price %} · ₹{{ '{:,.0f}'.format(listing.expected_price) if listing.expected_price is number else listing.expected_price }}{% endif %}
+                          {% if listing.expected_price %} · ₹{{ listing.expected_price | format_number }}{% endif %}
                           {% if listing.availability_date %} · Available {{ listing.availability_date }}{% endif %}
                         </div>
                       </div>

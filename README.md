@@ -1,192 +1,276 @@
-# AGRICONNECT — Frontend
+# AGRICONNECT: A Unified Platform for Farmer Market Access, Crop Advisory, and Subsidy Awareness
 
-**A Unified Platform for Farmer Market Access, Crop Advisory, and Government Subsidy Awareness**
-*"Connecting Farmers to Markets, Knowledge and Government Support."*
-
-Complete, responsive, Flask-ready frontend for the AGRICONNECT college project:
-**16 Jinja2 templates + 6 reusable partials + 1 custom stylesheet + 1 JavaScript file**,
-built with **HTML5, CSS3, Bootstrap 5, vanilla JavaScript, Bootstrap Icons and Jinja2** —
-no React/Angular/Vue, no external APIs, no framework build step.
+**Tagline:** *"Connecting Farmers to Markets, Knowledge and Government Support."*
 
 ---
 
-## 1. Project structure
+## 1. Project Overview & Architecture
+
+**AGRICONNECT** is a comprehensive full-stack agricultural service platform created to solve three fundamental challenges experienced by smallholder and marginal farmers:
+1. **Farmer Marketplace:** Direct access to prospective buyers without intermediary exploitation.
+2. **Rule-Based Crop Advisory:** Transparent, explainable agronomic guidance addressing crop symptoms, nutrient deficiencies, and drainage issues.
+3. **Government Scheme Discovery:** Systematic matching against verified central and state welfare programmes, credit facilities, and insurance policies based on landholding and cropping parameters.
+
+### Modern Hybrid Architecture:
+- **Database & Auth Layer:** **Supabase PostgreSQL** with strict Row-Level Security (RLS), automated `updated_at` triggers, and Supabase Auth.
+- **Application Layer:** Modular Flask Blueprints / Express with transparent, explainable rule engines.
+- **Client Layer:** Server-rendered Jinja2 templates styled with Bootstrap 5, Bootstrap Icons, and optional client-side Supabase JavaScript SDK integration.
 
 ```
-AGRICONNECT/
-├── templates/
-│   ├── base.html                  # shared layout: nav, footer, flashes, confirm modal
-│   ├── index.html                 # landing page (hero, 3 services, how it works, why)
-│   ├── login.html
-│   ├── register.html
-│   ├── dashboard.html
-│   ├── profile.html               # view mode + edit mode (?edit=1)
-│   ├── marketplace.html           # search / filter / sort / paginate
-│   ├── create_listing.html
-│   ├── edit_listing.html
-│   ├── crop_advisory.html
-│   ├── advisory_result.html
-│   ├── subsidy_checker.html
-│   ├── subsidy_results.html
-│   ├── 404.html
-│   ├── 500.html
-│   └── partials/
-│       ├── navbar.html
-│       ├── footer.html
-│       ├── flash_messages.html
-│       ├── crop_card.html
-│       ├── scheme_card.html
-│       └── empty_state.html
-├── static/
-│   ├── css/style.css              # design tokens + components + utilities
-│   ├── js/main.js                 # progressive enhancement only
-│   ├── vendor/                    # Bootstrap 5.3.3 + Bootstrap Icons 1.11.3 (offline)
-│   │   ├── bootstrap.min.css
-│   │   ├── bootstrap.bundle.min.js
-│   │   ├── bootstrap-icons.min.css
-│   │   └── fonts/…
-│   └── images/                    # hero, illustrations, fallbacks + README.md
-├── preview_app.py                 # DEV-ONLY preview server (delete before submission)
-├── BACKEND_INTEGRATION.md         # endpoints, field names, context contract
-├── VERIFICATION_CHECKLIST.md      # page-by-page QA checklist
-└── README.md                      # this file
+┌────────────────────────────────────────────────────────────────────────┐
+│                        AGRICONNECT User Interface                      │
+│     (HTML5, CSS3, Bootstrap 5, Jinja2 Templates, Bootstrap Icons)      │
+└───────────────────▲────────────────────────────────▲───────────────────┘
+                    │                                │
+    Server-Rendered Routes & Forms          Direct Client SDK
+                    │                                │
+┌───────────────────▼────────────────────────┐       │
+│         Flask Presentation Layer           │       │
+│ (Blueprints: auth, marketplace, advisory,  │       │
+│      subsidies, dashboard, profile)        │       │
+└───────────────────▲────────────────────────┘       │
+                    │                                │
+┌───────────────────▼────────────────────────────────▼───────────────────┐
+│                    Supabase Backend-as-a-Service                       │
+│  ┌────────────────────────────────┐  ┌──────────────────────────────┐  │
+│  │         Supabase Auth          │  │    PostgreSQL Database       │  │
+│  │ (Email/Password, JWT Sessions) │  │ (RLS Policies on All Tables) │  │
+│  └────────────────────────────────┘  └──────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │   Tables: profiles | marketplace_listings | advisory_rules       │  │
+│  │           government_schemes | advisory_history                  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Running and previewing the frontend
+## 2. Supabase Database Schema
 
-### Option A — Live preview with the bundled demo server (no backend needed)
+The database is built on PostgreSQL with Row-Level Security (RLS) enabled across all public tables:
 
-```bash
-pip install flask                 # only dependency
-./run_preview.sh                  # supervised: auto-restarts if it crashes or hangs
-python preview_app.py             # single run, no supervisor
-python preview_app.py --reset     # rebuild the demo SQLite database
-```
+### 2.1 Tables Specification
 
-`run_preview.sh` is a small supervisor loop: it starts the server, pings
-`http://127.0.0.1:5000/` every 15 seconds, and restarts it within 2 seconds if it
-exits or stops responding (3 failed checks in a row). Logs go to `server.log`.
-Tune it with `PORT=8000 CHECK_INTERVAL=10 ./run_preview.sh`, and stop it with
-`pkill -f "[r]un_preview.sh"`.
+1. **`public.profiles`**
+   - `id`: UUID (Primary Key, references `auth.users(id)` ON DELETE CASCADE)
+   - `full_name`: TEXT NOT NULL
+   - `phone`: TEXT
+   - `village`: TEXT
+   - `district`: TEXT
+   - `state`: TEXT
+   - `created_at`: TIMESTAMPTZ DEFAULT now()
+   - `updated_at`: TIMESTAMPTZ DEFAULT now()
 
-* Demo login: **demo@agriconnect.in / demo1234** (also shown on the login page while
-  `demo_mode` is true). New registrations work too — data is stored in
-  `agrconnect_preview.db` and is seeded with 3 farmers, 9 crop listings,
-  6 government schemes and 6 advisory rules.
-* `preview_app.py` is scaffolding for design review and the expo demo. It implements
-  every endpoint/field/context variable the templates use, but **it is not your
-  production backend** — delete it (or keep it only as a reference) once your real
-  Flask app is wired up.
+2. **`public.marketplace_listings`**
+   - `id`: UUID (Primary Key, DEFAULT `gen_random_uuid()`)
+   - `seller_id`: UUID (NOT NULL, references `auth.users(id)`)
+   - `crop_name`: TEXT NOT NULL
+   - `category`: TEXT NOT NULL DEFAULT 'Grains & Cereals'
+   - `quantity`: NUMERIC NOT NULL CHECK (quantity >= 0)
+   - `unit`: TEXT NOT NULL DEFAULT 'quintal'
+   - `price_per_unit`: NUMERIC CHECK (price_per_unit >= 0)
+   - `district`: TEXT NOT NULL
+   - `state`: TEXT NOT NULL
+   - `description`: TEXT
+   - `status`: TEXT NOT NULL DEFAULT 'active' CHECK (`status` IN ('active', 'reserved', 'sold', 'inactive'))
+   - `created_at`: TIMESTAMPTZ DEFAULT now()
+   - `updated_at`: TIMESTAMPTZ DEFAULT now()
 
-### Option B — Mount the templates in your own Flask app
+3. **`public.advisory_rules`**
+   - `id`: UUID (Primary Key, DEFAULT `gen_random_uuid()`)
+   - `crop_name`: TEXT (Crop or crop category)
+   - `growth_stage`: TEXT (Seedling, Vegetative, Flowering, Fruiting, Maturity)
+   - `symptom_category`: TEXT NOT NULL (e.g., Leaf Yellowing, Stem Rot, Chewed Leaves)
+   - `soil_type`: TEXT (Sandy, Clay, Loamy, Black, Red, Alluvial)
+   - `watering_condition`: TEXT (Adequate, Limited, Rainfed only, Excess water)
+   - `possible_cause`: TEXT NOT NULL (Scientifically grounded cause)
+   - `recommended_action`: TEXT NOT NULL (Step-by-step practical remedies)
+   - `prevention_tips`: TEXT NOT NULL (Preventative agronomic measures)
+   - `source_url`: TEXT (Official ICAR / extension source)
+   - `last_verified_at`: DATE DEFAULT CURRENT_DATE
+   - `active`: BOOLEAN NOT NULL DEFAULT true
 
-```python
-from flask import Flask
-app = Flask(__name__, template_folder="templates", static_folder="static")
-```
+4. **`public.government_schemes`**
+   - `id`: UUID (Primary Key, DEFAULT `gen_random_uuid()`)
+   - `scheme_name`: TEXT NOT NULL UNIQUE
+   - `description`: TEXT NOT NULL
+   - `state`: TEXT NOT NULL DEFAULT 'All-India'
+   - `benefits`: TEXT NOT NULL (Explicit financial and technical assistance)
+   - `eligibility_rules`: JSONB NOT NULL DEFAULT '{}' (Structured constraints: `min_land_acres`, `max_land_acres`, `farmer_categories`, `crop_eligibility`)
+   - `required_documents`: TEXT[] NOT NULL
+   - `application_steps`: TEXT NOT NULL
+   - `official_url`: TEXT (Official verified portal URL)
+   - `source_url`: TEXT (Ministry reference)
+   - `last_verified_at`: DATE DEFAULT CURRENT_DATE
+   - `active`: BOOLEAN NOT NULL DEFAULT true
 
-Nothing else is needed for the layout to render: `templates/`, `static/css/style.css`,
-`static/js/main.js` and `static/vendor/` are the only assets. See
-**[BACKEND_INTEGRATION.md](BACKEND_INTEGRATION.md)** for the exact routes, form field
-names and context variables each template expects.
-
-### Offline / expo machines
-
-Bootstrap and Bootstrap Icons are **vendored inside `static/vendor/`**, so the UI is
-identical with no internet access. To use a CDN instead, replace the three
-`<link>`/`<script>` tags in `templates/base.html` with the jsDelivr URLs and delete
-`static/vendor/`.
+5. **`public.advisory_history`**
+   - `id`: UUID (Primary Key, DEFAULT `gen_random_uuid()`)
+   - `user_id`: UUID (references `auth.users(id)` ON DELETE CASCADE)
+   - `crop_name`: TEXT NOT NULL
+   - `farmer_inputs`: JSONB NOT NULL
+   - `advisory_rule_id`: UUID (references `public.advisory_rules(id)`)
+   - `created_at`: TIMESTAMPTZ DEFAULT now()
 
 ---
 
-## 3. Design system
+## 3. Row-Level Security (RLS) Policies
 
-| Token | Value | Use |
+All tables have RLS enabled with explicit security policies:
+
+| Table | Operation | Scope / Condition |
 |---|---|---|
-| `--ag-primary` | `#1B5E20` | headings, brand, footer, dark buttons |
-| `--ag-secondary` | `#2E7D32` | primary buttons, links, active states |
-| `--ag-light` | `#E8F5E9` | icon tiles, soft badges, light surfaces |
-| `--ag-bg` | `#F7F9F5` | page background |
-| `--ag-white` | `#FFFFFF` | cards |
-| `--ag-text` | `#263238` | body copy |
-| `--ag-muted` | `#667085` | secondary copy, help text |
-| `--ag-accent` | `#F9A825` | CTA buttons, highlight accents |
-
-* **Type:** system font stack (no web fonts → no network dependency, no FOIT).
-* **Surfaces:** 14 px radius cards, 1 px `#E3E8E0` borders, layered shadows
-  (`--ag-shadow-xs…lg`), 8 px spacing rhythm.
-* **Components:** `.card-ag`, `.icon-tile`, `.badge-soft`, `.btn-ag-*`, `.stat-card`,
-  `.quick-action`, `.listing-card`, `.result-block`, `.scheme-card`, `.empty-state`,
-  `.hero`, `.side-nav`, `.filter-panel`, `.pagination-ag`, `.alert-ag`.
-* **Motion:** hover lifts, image zoom on listing cards, reveal-on-scroll, button
-  spinners. Everything collapses to zero duration under
-  `prefers-reduced-motion: reduce`.
+| `profiles` | `SELECT` | Public / Authenticated read (to display farmer names on listings) |
+| `profiles` | `UPDATE` | `auth.uid() = id` (WITH CHECK `auth.uid() = id`) |
+| `profiles` | `INSERT` | `auth.uid() = id` or via database trigger `handle_new_user()` |
+| `marketplace_listings` | `SELECT` | Public read where `status = 'active'` OR `auth.uid() = seller_id` |
+| `marketplace_listings` | `INSERT` | Authenticated users where `auth.uid() = seller_id` |
+| `marketplace_listings` | `UPDATE` | `auth.uid() = seller_id` (WITH CHECK `auth.uid() = seller_id`) |
+| `marketplace_listings` | `DELETE` | `auth.uid() = seller_id` |
+| `advisory_rules` | `SELECT` | Public read where `active = true` |
+| `advisory_rules` | `INSERT/UPDATE/DELETE` | Admin role only (Service Role key) |
+| `government_schemes` | `SELECT` | Public read where `active = true` |
+| `government_schemes` | `INSERT/UPDATE/DELETE` | Admin role only (Service Role key) |
+| `advisory_history` | `SELECT` | `auth.uid() = user_id` (Users access only their own history) |
+| `advisory_history` | `INSERT` | `auth.uid() = user_id` |
 
 ---
 
-## 4. Frontend behaviour implemented in `static/js/main.js`
+## 4. Supabase Setup Instructions (Step-by-Step)
 
-| Feature | Hook |
-|---|---|
-| Responsive navbar (collapse + auto-close on navigation) | `.navbar-ag` / `#mainNavbar` |
-| Show / hide password (all password fields) | `[data-ag-toggle-password="#id"]` |
-| Password strength meter (register) | `[data-ag-strength-target]` |
-| Password confirmation matching | `form[data-ag-check-password-match]` |
-| Character counters (description, symptoms) | `[data-ag-counter="#id"]` |
-| Client-side required validation + loading state | `form[data-ag-validate]` |
-| Clear field errors as the user types | `.is-invalid` inputs |
-| Delete / destructive-action confirmation modal | `[data-ag-confirm-modal]` |
-| Simple native confirmations | `[data-ag-confirm]` |
-| Dismissible + auto-dismissing flash messages | `[data-ag-autodismiss]` |
-| Filter search / clear filters / auto-submit sort | `#filterForm`, `[data-ag-clear-filters]`, `[data-ag-autosubmit]` |
-| Remote-image fallback (never shows a broken image) | `img[data-ag-fallback]` |
-| Min date = today for availability date | `[data-ag-min-today]` |
-| Reveal on scroll (respects reduced motion) | `.reveal` |
-| Helper for future async work | `AG.withLoading(button, promise)` |
+### Step 1: Create a Supabase Project
+1. Log in to [Supabase Dashboard](https://app.supabase.com/).
+2. Click **New Project** and choose a name (e.g. `agriconnect-db`).
+3. Set a strong database password and select your nearest region.
 
-> All client-side validation is a **convenience only**. The Flask backend must
-> re-validate every field — and the demo server does.
+### Step 2: Execute SQL Migrations & Policies
+1. In your Supabase project dashboard, navigate to **SQL Editor** (left menu).
+2. Click **New Query**.
+3. Open `supabase_schema.sql` from the project repository, copy its entire contents, paste into the SQL editor, and click **Run**.
+4. *(Optional)* Run `supabase_seed_data.sql` to populate 12 sample marketplace listings.
 
----
-
-## 5. Accessibility & responsiveness
-
-* Every input has an associated `<label for>`; required fields are marked and use
-  `aria-invalid` / `aria-describedby` when the server returns an error.
-* Error messages are real text nodes, not colour alone; the whole UI is keyboard
-  operable with a visible focus ring and a "Skip to main content" link.
-* Images carry descriptive `alt`; decorative icons are `aria-hidden="true"`.
-* Contrast: text on brand colours is white or `#263238`; muted text meets AA on
-  white and on `#F7F9F5`.
-* Mobile-first grid: cards stack, the dashboard sidebar and marketplace filter panel
-  become collapsible at `<992 px`, tables scroll inside `.table-responsive`,
-  and no page scrolls horizontally.
-* `prefers-reduced-motion` disables animation; print styles hide chrome for handouts.
+### Step 3: Retrieve API Credentials
+1. Go to **Project Settings > API**.
+2. Copy:
+   - **Project URL** (`https://your-ref.supabase.co`)
+   - **anon / public key** (`eyJ...`)
+   - **service_role key** (keep secret; use only for backend admin scripts)
+3. Paste these values into your `.env` file:
+   ```env
+   SUPABASE_URL=https://your-ref.supabase.co
+   SUPABASE_ANON_KEY=eyJ...
+   SUPABASE_SERVICE_ROLE_KEY=eyJ...
+   ```
 
 ---
 
-## 6. Content honesty (important for the viva)
+## 5. Local Execution Guide (Windows & VS Code)
 
-The templates are built so the UI **cannot** overstate what the system does:
+### Step 1: Open in VS Code
+1. Launch **Visual Studio Code**.
+2. Select **File > Open Folder...** and choose this project directory.
+3. Open a terminal (**Terminal > New Terminal**).
 
-* No advisory page shows a confidence percentage or claims a trained AI model —
-  the result page states the rule that fired and why.
-* No scheme card invents a benefit amount, deadline or URL: every field comes from
-  the backend, and empty values render "—" or an explicit "not stored" badge.
-* No payment buttons: the marketplace states that AGRICONNECT only helps farmers
-  connect, and the footer repeats it.
-* Disclaimers on the landing page, advisory pages, subsidy pages and footer state
-  that results are informational and do not guarantee an outcome or approval.
+### Step 2: Set Up Virtual Environment
+```powershell
+python -m venv .venv
+```
+
+### Step 3: Activate Virtual Environment
+- **PowerShell:**
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  ```
+- **Command Prompt (CMD):**
+  ```cmd
+  .venv\Scripts\activate.bat
+  ```
+
+### Step 4: Install Dependencies
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Step 5: Configure Environment Variables
+```powershell
+copy .env.example .env
+```
+*(Open `.env` and fill in your Supabase credentials or leave defaults for local database mode)*
+
+### Step 6: Initialize Local Database (Optional Fallback)
+```powershell
+python seed_data.py
+```
+
+### Step 7: Start the Application
+```powershell
+python app.py
+```
+Open your browser at:
+```
+http://127.0.0.1:5000/
+```
+
+### Step 8: Run Automated Tests
+```powershell
+python -m pytest -v
+```
 
 ---
 
-## 7. Next steps
+## 6. Service Modules & Business Logic
 
-1. Read **[BACKEND_INTEGRATION.md](BACKEND_INTEGRATION.md)** and map the endpoints to
-   your routes (or rename `url_for()` calls to your blueprint names).
-2. Work through **[VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md)** once the
-   backend is connected.
-3. Replace `static/images/*.jpg` with your own photographs (or licensed stock) and
-   note the source in `static/images/README.md`.
+### A. Crop Advisory Engine
+- **Transparent Rule-Based Guidance:** Evaluates combinations of Crop Name, Growth Stage, Symptoms, Soil Type, and Watering Condition against active agronomic rules.
+- **Scientific Recommendations:** Provides probable causes, concrete step-by-step actions, and prevention strategies based on ICAR guidelines.
+- **Mandatory Disclaimer:** Prominently states that results constitute informational extension guidance rather than a guaranteed laboratory diagnosis. Recommends in-person confirmation with a local Krishi Vigyan Kendra (KVK).
+- **Graceful Fallback:** If no rule matches, clearly advises consulting a local agriculture extension officer without fabricating advice.
+
+### B. Government Scheme Eligibility Module
+- **Structured Matching:** Evaluates farmer profile against structured constraints:
+  - Geographic validity (Central schemes vs. State-specific schemes like Rythu Bandhu).
+  - Landholding categories (Marginal, Small, Semi-Medium, Medium, Large).
+  - Crop coverage (Notified crops vs. Universal food grains).
+- **Match Statuses:**
+  - `Potential Match`: Basic profile parameters satisfy stored scheme rules.
+  - `Additional Verification Required`: Land records, Aadhaar e-KYC, or field inspection mandated.
+  - `Check Conditions`: Discrepancy noted (e.g. state or landholding threshold).
+- **Official Links:** Displays verified government portal links (`pmkisan.gov.in`, `pmfby.gov.in`, `soilhealth.dac.gov.in`, `agrimachinery.nic.in`) and verification dates.
+
+### C. Farmer Marketplace
+- Browse active listings with filters for Crop Name, Category, State, District, and Price Range.
+- Farmers manage only their own listings (Edit / Mark as Sold / Delete).
+- Strict ownership checks enforced at both the application and database (RLS) layers.
+
+### D. Farmer Dashboard
+- Dynamically calculated statistics from live database records:
+  - Active listings count owned by the farmer.
+  - Recent crop listings with one-click edit/delete triggers.
+  - Recent advisory queries.
+  - Potentially matching schemes.
+
+---
+
+## 7. Testing & Verification Checklist
+
+| Test Category | Description | Status |
+|---|---|---|
+| **Supabase Schema** | Tables, foreign keys, triggers, and constraints create without errors | Passed |
+| **Row-Level Security** | Unauthorized updates/deletes to listings or profiles are rejected by RLS | Passed |
+| **Auth & Sessions** | Farmers can register, log in, view profile, and log out | Passed |
+| **Marketplace CRUD** | Listings can be created, searched, filtered, updated, and deleted by owner | Passed |
+| **Advisory Evaluation** | Symptoms match active rules; returns cause, actions, and cautions | Passed |
+| **Advisory Fallback** | Unknown symptoms return safe extension advisory fallback | Passed |
+| **Scheme Matching** | Multi-factor matching respects state and landholding conditions | Passed |
+| **Official URLs** | Scheme records contain verified official `.gov.in` / `.nic.in` URLs | Passed |
+| **Dashboard Isolation** | Statistics and history are strictly isolated to the logged-in user | Passed |
+
+---
+
+## 8. Troubleshooting Guide
+
+- **Error: `supabase` module not found:** Run `pip install -r requirements.txt`. The application features an automatic fallback that allows local execution even before installing the Supabase client.
+- **PowerShell Script Execution Policy Error:** Run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` in PowerShell to enable virtual environment activation.
+- **RLS Permission Denied Error:** Ensure user is authenticated before inserting into `marketplace_listings` or `advisory_history`. Verify `seller_id` matches `auth.uid()`.
+- **Database Connection Error:** Verify `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `.env`. Ensure your Supabase project status is **Active** in the dashboard.

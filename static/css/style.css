@@ -40,8 +40,17 @@
   --ag-radius-lg: 20px;
   --ag-radius-pill: 999px;
 
-  --ag-font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ag-font: "Segoe UI", system-ui, -apple-system, "Noto Sans", "Noto Sans Telugu", "Noto Sans Devanagari", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Helvetica Neue", Arial, sans-serif;
   --ag-transition: .22s ease;
+}
+
+@keyframes agPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.animate-pulse {
+  animation: agPulse 1.2s infinite;
 }
 
 /* --------------------------------------------------------------------------
@@ -101,18 +110,6 @@ textarea:focus-visible,
   border-radius: 6px;
 }
 
-.skip-link {
-  position: absolute;
-  top: .5rem;
-  left: .5rem;
-  z-index: 1080;
-  background: var(--ag-white);
-  color: var(--ag-primary);
-  padding: .5rem .9rem;
-  border-radius: var(--ag-radius-sm);
-  box-shadow: var(--ag-shadow-md);
-  font-weight: 600;
-}
 
 /* --------------------------------------------------------------------------
    3. BUTTONS

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}{{ listing.crop_name }} — Harvest Lot Details — AGRICONNECT{% endblock %}
+{% block description %}View details for {{ listing.crop_name }} offered by {{ listing.farmer_name or 'Farmer' }} in {{ listing.district }}, {{ listing.state }}. Place an order offer directly on AGRICONNECT.{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-light">
+  <div class="container-xxl">
+
+    <!-- Breadcrumbs -->
+    <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-3">
+      <a href="{{ url_for('index') }}" class="text-muted text-decoration-none">Home</a>
+      <span class="mx-1 text-muted">/</span>
+      <a href="{{ url_for('marketplace') }}" class="text-muted text-decoration-none">Marketplace</a>
+      <span class="mx-1 text-muted">/</span>
+      <span class="text-dark fw-semibold">{{ listing.crop_name }}</span>
+    </nav>
+
+    <div class="row g-4">
+
+      <!-- Left Column: Listing Details & Farmer Info -->
+      <div class="col-lg-7 col-xl-8">
+        <div class="card card-ag shadow-sm border-0 mb-4">
+          <div class="card-body p-4">
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+              <div>
+                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 mb-2">
+                  <i class="bi bi-tag me-1"></i>{{ listing.unit }} lot
+                </span>
+                <h1 class="h2 fw-bold text-dark mb-1">{{ listing.crop_name }}</h1>
+                <p class="text-muted mb-0">
+                  <i class="bi bi-geo-alt text-danger me-1"></i>{{ listing.district }}, {{ listing.state }}
+                  {% if listing.availability_date %} · Available from {{ listing.availability_date }}{% endif %}
+                </p>
+              </div>
+
+              <div class="text-lg-end">
+                <span class="text-muted small d-block">Expected Price</span>
+                <span class="h2 fw-bold text-success mb-0">₹{{ listing.expected_price or 'N/A' }}</span>
+                <span class="text-muted small">/ {{ listing.unit }}</span>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- Stock & Location Grid -->
+            <div class="row g-3 mb-4">
+              <div class="col-6 col-sm-4">
+                <div class="p-3 bg-light rounded-3 text-center border">
+                  <span class="text-muted small d-block mb-1">Available Quantity</span>
+                  <strong class="fs-5 text-dark">{{ listing.quantity }} {{ listing.unit }}s</strong>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4">
+                <div class="p-3 bg-light rounded-3 text-center border">
+                  <span class="text-muted small d-block mb-1">Status</span>
+                  <span class="badge bg-success px-3 py-1">{{ listing.status|capitalize }}</span>
+                </div>
+              </div>
+              <div class="col-12 col-sm-4">
+                <div class="p-3 bg-light rounded-3 text-center border">
+                  <span class="text-muted small d-block mb-1">Harvest Date</span>
+                  <strong class="fs-6 text-dark">{{ listing.availability_date or 'Immediate' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <h2 class="h5 fw-bold mb-2">Crop Lot Description</h2>
+            <p class="text-secondary mb-4 leading-relaxed">
+              {{ listing.description or 'No specific description provided by the farmer. Please contact the farmer directly or place an order offer for details.' }}
+            </p>
+
+            <hr class="my-4">
+
+            <!-- Farmer Information -->
+            <div class="card bg-white border border-secondary border-opacity-25 rounded-3 p-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar-circle bg-success text-white fw-bold fs-4" style="width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                  {{ (listing.farmer_name or 'F')|initials }}
+                </div>
+                <div>
+                  <h3 class="h6 fw-bold mb-1">{{ listing.farmer_name or 'Verified Farmer' }}</h3>
+                  <p class="small text-muted mb-0"><i class="bi bi-geo-alt me-1"></i>{{ listing.district }}, {{ listing.state }}</p>
+                  {% if listing.contact_info %}
+                    <p class="small text-muted mb-0 mt-1"><i class="bi bi-telephone me-1"></i>Contact: <strong>{{ listing.contact_info }}</strong></p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Place Order Form & Wishlist Action -->
+      <div class="col-lg-5 col-xl-4">
+
+        <!-- Wishlist Button -->
+        {% if current_user and current_user.role == 'buyer' %}
+          <div class="mb-3">
+            <form method="post" action="{{ url_for('toggle_wishlist', listing_id=listing.id) }}">
+              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+              <button type="submit" class="btn {% if is_wishlisted %}btn-danger{% else %}btn-outline-danger{% endif %} w-100 py-2 fw-medium shadow-sm">
+                <i class="bi {% if is_wishlisted %}bi-heart-fill{% else %}bi-heart{% endif %} me-2"></i>
+                {% if is_wishlisted %}Saved in Wishlist{% else %}Add to Wishlist{% endif %}
+              </button>
+            </form>
+          </div>
+        {% endif %}
+
+        <!-- Order / Offer Form -->
+        <div class="card card-ag shadow-sm border-0 sticky-top" style="top: 80px;">
+          <div class="card-header bg-white border-bottom py-3">
+            <h2 class="h5 fw-bold mb-0 text-dark"><i class="bi bi-bag-plus text-success me-2"></i>Place Purchase Offer</h2>
+            <small class="text-muted">Send an order request directly to the farmer</small>
+          </div>
+
+          <div class="card-body p-4">
+            {% if current_user and current_user.role == 'buyer' %}
+
+              <form method="post" action="{{ url_for('place_order') }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <input type="hidden" name="listing_id" value="{{ listing.id }}">
+
+                <div class="mb-3">
+                  <label for="quantity" class="form-label fw-medium">Required Quantity ({{ listing.unit }}s) <span class="text-danger">*</span></label>
+                  <input type="number" step="0.1" class="form-control" id="quantity" name="quantity" 
+                         value="{{ listing.quantity }}" max="{{ listing.quantity }}" min="0.1" required>
+                  <small class="text-muted">Maximum available: {{ listing.quantity }} {{ listing.unit }}s</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="offered_price" class="form-label fw-medium">Offered Price per {{ listing.unit }} (₹) <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" step="1" class="form-control" id="offered_price" name="offered_price" 
+                           value="{{ listing.expected_price or 1000 }}" required>
+                  </div>
+                  <small class="text-muted">Farmer expected price: ₹{{ listing.expected_price or 'N/A' }}</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="notes" class="form-label fw-medium">Delivery / Purchase Notes (Optional)</label>
+                  <textarea class="form-control" id="notes" name="notes" rows="3" 
+                            placeholder="Specify preferred pickup date, logistics arrangements, or price negotiation details..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-ag-primary w-100 py-2.5 fw-bold">
+                  <i class="bi bi-send me-2"></i>Send Order Offer
+                </button>
+              </form>
+
+            {% elif current_user and current_user.role == 'farmer' %}
+              <div class="text-center py-3">
+                <i class="bi bi-info-circle text-info fs-3 d-block mb-2"></i>
+                <p class="small text-muted mb-0">You are logged in as a <strong>Farmer</strong>. Crop lot purchase offers can only be submitted by registered Buyers.</p>
+              </div>
+            {% else %}
+              <div class="text-center py-3">
+                <i class="bi bi-lock text-warning fs-3 d-block mb-2"></i>
+                <h3 class="h6 fw-bold">Sign in to Place Order Offers</h3>
+                <p class="small text-muted mb-3">Please register or log in as a buyer to connect directly with farmers.</p>
+                <div class="d-grid gap-2">
+                  <a href="{{ url_for('login') }}" class="btn btn-ag-primary btn-sm">Log In</a>
+                  <a href="{{ url_for('register_buyer') }}" class="btn btn-outline-secondary btn-sm">Register as Buyer</a>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

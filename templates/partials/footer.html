@@ -17,66 +17,61 @@
           </span>
           <span class="text-white fs-5 fw-bold" style="letter-spacing:.02em;">AGRICONNECT</span>
         </a>
-        <p class="mb-3" style="max-width: 30rem;">
-          A unified platform for farmer market access, crop advisory and government
-          subsidy awareness — connecting farmers to markets, knowledge and
-          government support.
+        <p class="mb-3" style="max-width: 30rem;" data-i18n="footer.aboutText">
+          {{ t('footer.aboutText') }}
         </p>
         <p class="mb-0 small">
           <i class="bi bi-quote" aria-hidden="true"></i>
-          <em>“Connecting Farmers to Markets, Knowledge and Government Support.”</em>
+          <em data-i18n="tagline">“{{ t('tagline') }}”</em>
         </p>
       </div>
 
       {# ---------------------------- Services ---------------------------- #}
       <div class="col-lg-2 col-md-6 col-6">
-        <h6>Services</h6>
+        <h6 data-i18n="nav.marketplace">Services</h6>
         <ul class="footer-links">
-          <li><a href="{{ url_for('marketplace') }}"><i class="bi bi-basket2" aria-hidden="true"></i>Farmer Marketplace</a></li>
-          <li><a href="{{ url_for('crop_advisory') }}"><i class="bi bi-flower2" aria-hidden="true"></i>Crop Advisory</a></li>
-          <li><a href="{{ url_for('subsidy_checker') }}"><i class="bi bi-bank2" aria-hidden="true"></i>Subsidy Checker</a></li>
-          <li><a href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i>Add a Listing</a></li>
+          <li><a href="{{ url_for('marketplace') }}"><i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span></a></li>
+          <li><a href="{{ url_for('crop_advisory') }}"><i class="bi bi-flower2" aria-hidden="true"></i><span data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span></a></li>
+          <li><a href="{{ url_for('subsidy_checker') }}"><i class="bi bi-bank2" aria-hidden="true"></i><span data-i18n="nav.schemes">{{ t('nav.schemes') }}</span></a></li>
+          <li><a href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i><span data-i18n="nav.addListing">{{ t('nav.addListing') }}</span></a></li>
         </ul>
       </div>
 
       {# ----------------------------- Account ---------------------------- #}
       <div class="col-lg-2 col-md-6 col-6">
-        <h6>Account</h6>
+        <h6 data-i18n="nav.myAccount">Account</h6>
         <ul class="footer-links">
           {% if current_user and current_user.is_authenticated %}
-            <li><a href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard</a></li>
-            <li><a href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i>My profile</a></li>
+            <li><a href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i><span data-i18n="nav.dashboard">{{ t('nav.dashboard') }}</span></a></li>
+            <li><a href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i><span data-i18n="nav.myProfile">{{ t('nav.myProfile') }}</span></a></li>
           {% else %}
-            <li><a href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Login</a></li>
-            <li><a href="{{ url_for('register') }}"><i class="bi bi-person-plus" aria-hidden="true"></i>Register</a></li>
+            <li><a href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i><span data-i18n="nav.login">{{ t('nav.login') }}</span></a></li>
+            <li><a href="{{ url_for('register') }}"><i class="bi bi-person-plus" aria-hidden="true"></i><span data-i18n="nav.register">{{ t('nav.register') }}</span></a></li>
           {% endif %}
         </ul>
       </div>
 
-      {# ---------------------------- Disclaimer -------------------------- #}
+      {# ---------------------------- Disclaimer & Contact -------------------------- #}
       <div class="col-lg-4 col-md-12">
-        <h6><i class="bi bi-info-circle" aria-hidden="true"></i>Important disclaimer</h6>
-        <div class="footer-disclaimer">
-          AGRICONNECT is an academic project prototype. Crop advisory output is
-          generated from simple, explainable rule-based logic and
-          <strong>does not guarantee any particular agricultural outcome</strong>.
-          Subsidy results are preliminary informational matches created from the
-          scheme data configured in this application — they
-          <strong>do not guarantee scheme approval, benefit payment or eligibility</strong>.
-          Always confirm details with the concerned government department,
-          agriculture officer or an authorised local authority before acting.
+        <h6><i class="bi bi-shield-exclamation text-warning" aria-hidden="true"></i> <span data-i18n="footer.disclaimerTitle">{{ t('footer.disclaimerTitle') }}</span></h6>
+        <div class="footer-disclaimer mb-3" data-i18n="footer.disclaimerText">
+          {{ t('footer.disclaimerText') }}
+        </div>
+        <h6><i class="bi bi-telephone text-success" aria-hidden="true"></i> <span data-i18n="footer.contactTitle">{{ t('footer.contactTitle') }}</span></h6>
+        <div class="footer-disclaimer" data-i18n="footer.contactText">
+          {{ t('footer.contactText') }}
         </div>
       </div>
     </div>
 
     <div class="footer-bottom mt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
       <p class="mb-0">
-        &copy; <span datetime="{{ now.year if now else '' }}">{{ current_year if current_year else (now.year if now else '2026') }}</span>
-        AGRICONNECT — {{ app_name or 'AGRICONNECT' }}. College project prototype.
+        &copy; <span>{{ current_year if current_year else '2026' }}</span>
+        AGRICONNECT. <span data-i18n="tagline">{{ t('tagline') }}</span>
       </p>
-      <p class="mb-0 small">
-        <i class="bi bi-shield-check" aria-hidden="true"></i>
-        No payments are processed through this platform.
+      <p class="mb-0 small text-muted-ag" data-i18n="footer.copyright">
+        <i class="bi bi-shield-check text-success" aria-hidden="true"></i>
+        {{ t('footer.copyright') }}
       </p>
     </div>
   </div>

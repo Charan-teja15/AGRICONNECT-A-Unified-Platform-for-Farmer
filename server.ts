@@ -5,6 +5,7 @@ import nunjucks from 'nunjucks';
 import cookieSession from 'cookie-session';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { LANGUAGES, TRANSLATIONS, CROP_ALIASES, translateKey } from './locales.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -215,10 +216,15 @@ interface User {
   name: string;
   email: string;
   phone?: string | null;
+  role?: string | null;
   state?: string | null;
   district?: string | null;
   land_size?: number | null;
   preferred_crop?: string | null;
+  buyer_type?: string | null;
+  organisation_name?: string | null;
+  crops_of_interest?: string | null;
+  preferred_language?: string | null;
   password_hash: string;
   created_at: string;
 }
@@ -237,6 +243,25 @@ interface Listing {
   contact_info?: string | null;
   status: string;
   image_url?: string | null;
+  created_at: string;
+}
+
+interface Order {
+  id: number;
+  buyer_id: number;
+  listing_id: number;
+  quantity: number;
+  offered_price: number;
+  notes?: string | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at?: string | null;
+}
+
+interface WishlistItem {
+  id: number;
+  buyer_id: number;
+  listing_id: number;
   created_at: string;
 }
 
@@ -310,11 +335,15 @@ let userSeq = 1;
 let listingSeq = 1;
 let advisorySeq = 1;
 let schemeSeq = 1;
+let orderSeq = 1;
+let wishlistSeq = 1;
 
 const users: Map<number, User> = new Map();
 const listings: Map<number, Listing> = new Map();
 const advisoryQueries: Map<number, AdvisoryQuery> = new Map();
 const schemes: Map<number, Scheme> = new Map();
+const orders: Map<number, Order> = new Map();
+const wishlists: Map<number, WishlistItem> = new Map();
 
 function seedData() {
   const now = formatDateShort();
@@ -325,6 +354,7 @@ function seedData() {
       name: 'Ramesh Kumar',
       email: DEMO_EMAIL,
       phone: '9848012345',
+      role: 'farmer',
       state: 'Telangana',
       district: 'Warangal',
       land_size: 2.5,
@@ -336,6 +366,7 @@ function seedData() {
       name: 'Lakshmi Devi',
       email: 'lakshmi@example.in',
       phone: '9848098765',
+      role: 'farmer',
       state: 'Telangana',
       district: 'Nalgonda',
       land_size: 4.0,
@@ -347,6 +378,7 @@ function seedData() {
       name: 'Suresh Naik',
       email: 'suresh@example.in',
       phone: '9848076543',
+      role: 'farmer',
       state: 'Karnataka',
       district: 'Karimnagar',
       land_size: 1.2,
@@ -360,6 +392,39 @@ function seedData() {
     const id = userSeq++;
     users.set(id, { id, ...u });
   }
+
+  // Seed Demo Buyers
+  const kavithaId = userSeq++;
+  users.set(kavithaId, {
+    id: kavithaId,
+    name: 'Kavitha Rao',
+    email: 'buyer@agriconnect.in',
+    phone: '9848011223',
+    role: 'buyer',
+    state: 'Telangana',
+    district: 'Warangal',
+    buyer_type: 'Retailer',
+    organisation_name: 'Rao Fresh Organics',
+    crops_of_interest: 'Paddy, Tomato, Cotton',
+    password_hash: demoHash,
+    created_at: now,
+  });
+
+  const rajeshId = userSeq++;
+  users.set(rajeshId, {
+    id: rajeshId,
+    name: 'Rajesh Traders',
+    email: 'trader@agriconnect.in',
+    phone: '9848055667',
+    role: 'buyer',
+    state: 'Telangana',
+    district: 'Hanamkonda',
+    buyer_type: 'Trader',
+    organisation_name: 'Rajesh Agri Exports',
+    crops_of_interest: 'Paddy, Wheat, Maize',
+    password_hash: demoHash,
+    created_at: now,
+  });
 
   const todayIso = new Date().toISOString().split('T')[0];
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -498,6 +563,41 @@ function seedData() {
     listings.set(id, { id, ...l });
   }
 
+  // Seed demo orders & wishlist for Kavitha Rao
+  const o1Id = orderSeq++;
+  orders.set(o1Id, {
+    id: o1Id,
+    buyer_id: 4, // Kavitha Rao
+    listing_id: 1,
+    quantity: 10,
+    offered_price: 2150,
+    notes: 'Interested in 10 quintals of paddy. Can collect directly.',
+    status: 'pending',
+    created_at: now,
+    updated_at: now,
+  });
+
+  const o2Id = orderSeq++;
+  orders.set(o2Id, {
+    id: o2Id,
+    buyer_id: 4, // Kavitha Rao
+    listing_id: 2,
+    quantity: 5,
+    offered_price: 2050,
+    notes: 'Ready for immediate dispatch.',
+    status: 'accepted',
+    created_at: now,
+    updated_at: now,
+  });
+
+  const w1Id = wishlistSeq++;
+  wishlists.set(w1Id, {
+    id: w1Id,
+    buyer_id: 4,
+    listing_id: 3,
+    created_at: now,
+  });
+
   const rawSchemes = [
     {
       name: 'PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)',
@@ -560,8 +660,8 @@ function seedData() {
       official_url: 'https://www.myscheme.gov.in/',
     },
     {
-      name: 'Rythu Bandhu / State Investment Support (illustrative state scheme)',
-      description: 'Illustrative state-level investment support scheme for landholding farmers. Configuration, amount and eligibility differ by state — this record is a demonstration entry for the project database.',
+      name: 'Rythu Bandhu / State Investment Support Scheme',
+      description: 'State-level agricultural investment support scheme providing financial assistance per season to eligible landholding farmers.',
       level: 'State',
       category: 'Investment support',
       states: 'Telangana',
@@ -575,8 +675,8 @@ function seedData() {
       official_url: '',
     },
     {
-      name: 'Micro Irrigation / Drip & Sprinkler Support (illustrative)',
-      description: 'Illustrative support for micro-irrigation systems that improve water-use efficiency. This record demonstrates a scheme with a land-size condition.',
+      name: 'Pradhan Mantri Krishi Sinchayee Yojana (Micro Irrigation)',
+      description: 'Financial assistance and subsidy support for installing drip and sprinkler micro-irrigation systems to improve water-use efficiency on cultivable land.',
       level: 'Central',
       category: 'Irrigation',
       states: '',
@@ -797,12 +897,13 @@ app.use(express.json());
 app.use(
   cookieSession({
     name: 'agriconnect_session',
-    keys: [process.env.AGRICONNECT_SECRET || 'agriconnect-secret-preview-key'],
+    keys: [process.env.AGRICONNECT_SECRET || 'agriconnect-session-secret-key'],
     maxAge: 30 * 24 * 60 * 60 * 1000,
   }) as any
 );
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
+app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // --------------------------------------------------------------------------
 // Flash Message Support
@@ -871,6 +972,36 @@ nunjucksEnv.addGlobal('range', (start: number, stop: number) => {
 });
 
 nunjucksEnv.addGlobal('dict_merge', (a: any, b: any) => ({ ...(a || {}), ...(b || {}) }));
+
+nunjucksEnv.addFilter('initials', (val: any) => {
+  if (!val) return 'F';
+  const str = String(val).trim();
+  if (!str) return 'F';
+  const parts = str.split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return str.slice(0, 2).toUpperCase();
+});
+
+nunjucksEnv.addFilter('format_number', (val: any) => {
+  if (val === null || val === undefined || val === '') return '';
+  const num = Number(val);
+  if (!isNaN(num)) {
+    return Math.round(num).toLocaleString('en-IN');
+  }
+  return String(val);
+});
+
+nunjucksEnv.addFilter('string', (val: any) => {
+  return val !== null && val !== undefined ? String(val) : '';
+});
+
+nunjucksEnv.addFilter('t', (key: any, langCode?: string) => {
+  if (!key) return '';
+  const lang = langCode || 'en';
+  return translateKey(lang, String(key));
+});
 
 // Helper function to build application URLs
 function urlFor(endpoint: string, ...args: any[]): string {
@@ -975,8 +1106,37 @@ function renderView(
 
   const csrfToken = () => req.csrfToken || '';
 
+  // Parse cookies from headers
+  const reqCookies: Record<string, string> = {};
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(c => {
+      const parts = c.split('=');
+      const name = parts.shift()?.trim();
+      if (name) reqCookies[name] = decodeURIComponent(parts.join('='));
+    });
+  }
+
+  const queryLang = req.query.lang as string;
+  const sessionLang = req.session?.lang;
+  const cookieLang = reqCookies.ag_lang;
+  const userLang = (req.currentUser as any)?.preferred_language;
+
+  const rawLang = queryLang || sessionLang || cookieLang || userLang || 'en';
+  const current_lang = LANGUAGES.some(l => l.code === rawLang) ? rawLang : 'en';
+
+  if (req.session) req.session.lang = current_lang;
+  res.cookie('ag_lang', current_lang, { maxAge: 31536000000, httpOnly: false });
+
+  const current_lang_obj = LANGUAGES.find(l => l.code === current_lang) || LANGUAGES[0];
+
   const context: Record<string, any> = {
     current_user,
+    current_lang,
+    current_lang_obj,
+    languages: LANGUAGES,
+    translations_json: JSON.stringify(TRANSLATIONS),
+    t: (key: string, params?: Record<string, string>) => translateKey(current_lang, key, params),
     user: viewData.user || (current_user.is_authenticated ? current_user : null),
     request: {
       endpoint: viewData.endpoint || 'index',
@@ -1002,8 +1162,8 @@ function renderView(
     categories: LANDHOLDING_CATEGORIES,
     sort_options: SORT_OPTIONS,
     history_enabled: true,
-    demo_mode: true,
-    demo_credentials: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+    demo_mode: false,
+    demo_credentials: null,
     form_data: makeDict(viewData.form_data || {}),
     query_data: makeDict(viewData.query_data || {}),
     errors: viewData.errors || {},
@@ -1146,18 +1306,27 @@ app.post('/login', (req, res) => {
   }
 
   req.flash(`Welcome back, ${foundUser.name.split(' ')[0]}!`, 'success');
-  const nextUrl = req.body.next || '/dashboard';
+  const userRole = (foundUser.role || 'farmer').toLowerCase();
+  const defaultTarget = userRole === 'buyer' ? '/buyer/dashboard' : '/dashboard';
+  const nextUrl = req.body.next || req.query.next || defaultTarget;
   res.redirect(nextUrl);
 });
 
-// Register
+// Register Selection Page
 app.get('/register', (req, res) => {
   renderView(req, res, 'register.html', {
     endpoint: 'register',
   });
 });
 
-app.post('/register', (req, res) => {
+// Register Farmer
+app.get(['/register/farmer', '/register_farmer'], (req, res) => {
+  renderView(req, res, 'register_farmer.html', {
+    endpoint: 'register_farmer',
+  });
+});
+
+app.post(['/register', '/register/farmer', '/register_farmer'], (req, res) => {
   const data = {
     full_name: (req.body.full_name || '').trim(),
     email: (req.body.email || '').trim(),
@@ -1198,9 +1367,9 @@ app.post('/register', (req, res) => {
     return renderView(
       req,
       res,
-      'register.html',
+      'register_farmer.html',
       {
-        endpoint: 'register',
+        endpoint: 'register_farmer',
         errors,
         form_data: data,
       },
@@ -1208,27 +1377,128 @@ app.post('/register', (req, res) => {
     );
   }
 
-  const newId = userSeq++;
-  const newUser: User = {
-    id: newId,
+  const id = userSeq++;
+  const pwdHash = bcrypt.hashSync(password, 10);
+  users.set(id, {
+    id,
     name: data.full_name,
     email: data.email,
-    phone: data.phone || null,
+    phone: data.phone,
+    role: 'farmer',
     state: data.state,
     district: data.district,
     land_size: data.land_size ? parseFloat(data.land_size) : null,
-    preferred_crop: data.preferred_crop || null,
-    password_hash: bcrypt.hashSync(password, 10),
+    preferred_crop: data.preferred_crop,
+    password_hash: pwdHash,
     created_at: formatDateShort(),
-  };
+  });
 
-  users.set(newId, newUser);
   if (req.session) {
-    req.session.user_id = newId;
+    req.session.user_id = id;
   }
 
   req.flash('Your farmer profile has been created. Welcome to AGRICONNECT!', 'success');
   res.redirect('/dashboard');
+});
+
+// Register Buyer
+app.get(['/register_buyer', '/register-buyer', '/register/buyer'], (req, res) => {
+  renderView(req, res, 'register_buyer.html', {
+    endpoint: 'register_buyer',
+  });
+});
+
+app.post(['/register_buyer', '/register-buyer', '/register/buyer'], (req, res) => {
+  const data = {
+    full_name: (req.body.full_name || '').trim(),
+    email: (req.body.email || '').trim(),
+    phone: (req.body.phone || '').trim(),
+    buyer_type: (req.body.buyer_type || '').trim(),
+    organisation_name: (req.body.organisation_name || '').trim(),
+    state: (req.body.state || '').trim(),
+    district: (req.body.district || '').trim(),
+    crops_of_interest: (req.body.crops_of_interest || '').trim(),
+  };
+
+  const password = req.body.password || '';
+  const confirm = req.body.confirm_password || '';
+  const errors: Record<string, string> = {};
+
+  if (!data.full_name) errors.full_name = 'Please enter your full name.';
+  if (!data.email || !data.email.includes('@')) {
+    errors.email = 'Please enter a valid email address.';
+  } else {
+    for (const u of users.values()) {
+      if (u.email.toLowerCase() === data.email.toLowerCase()) {
+        errors.email = 'This email is already registered. Try logging in.';
+        break;
+      }
+    }
+  }
+
+  if (!data.phone) {
+    errors.phone = 'Please enter your phone number.';
+  } else if (!/^\d{10}$/.test(data.phone.replace(/[\s-]/g, ''))) {
+    errors.phone = 'Please enter a valid 10-digit phone number.';
+  }
+
+  if (password.length < 6) errors.password = 'Password must be at least 6 characters long.';
+  if (password !== confirm) errors.confirm_password = 'The two passwords do not match.';
+
+  if (Object.keys(errors).length > 0) {
+    return renderView(
+      req,
+      res,
+      'register_buyer.html',
+      {
+        endpoint: 'register_buyer',
+        errors,
+        form_data: data,
+      },
+      400
+    );
+  }
+
+  const id = userSeq++;
+  const pwdHash = bcrypt.hashSync(password, 10);
+  const now = formatDateShort();
+
+  const newUser: User = {
+    id,
+    name: data.full_name,
+    email: data.email,
+    phone: data.phone,
+    role: 'buyer',
+    state: data.state,
+    district: data.district,
+    buyer_type: data.buyer_type || 'Individual',
+    organisation_name: data.organisation_name,
+    crops_of_interest: data.crops_of_interest,
+    password_hash: pwdHash,
+    created_at: now,
+  };
+
+  users.set(id, newUser);
+  if (req.session) {
+    req.session.user_id = id;
+  }
+
+  req.flash('Your buyer profile has been created. Welcome to AGRICONNECT!', 'success');
+  res.redirect('/buyer/dashboard');
+});
+
+// Language preference API endpoint
+app.post('/api/user/language', (req, res) => {
+  const lang = (req.body?.lang || '').trim();
+  if (lang && LANGUAGES.some(l => l.code === lang)) {
+    if (req.session) req.session.lang = lang;
+    res.cookie('ag_lang', lang, { maxAge: 31536000000, httpOnly: false });
+    if (req.currentUser) {
+      req.currentUser.preferred_language = lang;
+    }
+    return res.json({ success: true, lang });
+  }
+  return res.status(400).json({ error: 'Invalid language code' });
 });
 
 // Logout
@@ -1236,7 +1506,316 @@ app.all('/logout', (req, res) => {
   if (req.session) {
     req.session = null;
   }
+  req.flash('You have been logged out.', 'info');
   res.redirect('/');
+});
+
+// Buyer Dashboard
+app.get('/buyer/dashboard', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  if (user.role !== 'buyer') {
+    return renderView(req, res, '403.html', {
+      message: 'This section is reserved for buyer accounts.',
+      current_role: user.role || 'farmer',
+    }, 403);
+  }
+
+  const userOrders = Array.from(orders.values()).filter(o => o.buyer_id === user.id);
+  const totalOrders = userOrders.length;
+  const pendingOrders = userOrders.filter(o => o.status === 'pending').length;
+  const acceptedOrders = userOrders.filter(o => o.status === 'accepted').length;
+
+  const userWishlist = Array.from(wishlists.values()).filter(w => w.buyer_id === user.id);
+  const wishlistCount = userWishlist.length;
+
+  const recentOrdersWithDetails = userOrders.sort((a, b) => b.id - a.id).slice(0, 5).map(o => {
+    const listing = listings.get(o.listing_id);
+    const farmer = listing ? users.get(listing.user_id) : null;
+    return {
+      ...o,
+      crop_name: listing?.crop_name || 'Crop',
+      unit: listing?.unit || 'quintal',
+      state: listing?.state || '',
+      district: listing?.district || '',
+      farmer_name: farmer?.name || 'Farmer',
+      farmer_phone: farmer?.phone || '',
+    };
+  });
+
+  const recentListings = Array.from(listings.values()).slice(0, 6).map(l => {
+    const farmer = users.get(l.user_id);
+    return { ...l, farmer_name: farmer?.name || 'Farmer' };
+  });
+
+  const buyerFields = ['name', 'email', 'phone', 'buyer_type', 'organisation_name', 'state', 'district', 'crops_of_interest'];
+  const filled = buyerFields.filter(f => (user as any)[f]).length;
+  const profileCompletion = Math.round((filled / buyerFields.length) * 100);
+
+  renderView(req, res, 'buyer_dashboard.html', {
+    endpoint: 'buyer_dashboard',
+    user,
+    stats: {
+      total_orders: totalOrders,
+      pending_orders: pendingOrders,
+      accepted_orders: acceptedOrders,
+      wishlist_count: wishlistCount,
+      total_available_listings: listings.size,
+      available_crops: new Set(Array.from(listings.values()).map(l => l.crop_name)).size,
+    },
+    recent_orders: recentOrdersWithDetails,
+    recent_listings: recentListings,
+    profile_completion: profileCompletion,
+  });
+});
+
+// Listing Details & Order Placement
+app.get(['/listing/:id', '/listings/:id'], (req, res) => {
+  const listingId = parseInt(req.params.id, 10);
+  const listing = listings.get(listingId);
+  if (!listing) {
+    return renderView(req, res, '404.html', {}, 404);
+  }
+
+  const farmer = users.get(listing.user_id);
+  const currentUser = req.currentUser;
+
+  let isWishlisted = false;
+  if (currentUser && currentUser.role === 'buyer') {
+    isWishlisted = Array.from(wishlists.values()).some(w => w.buyer_id === currentUser.id && w.listing_id === listingId);
+  }
+
+  const listingWithFarmer = {
+    ...listing,
+    farmer_name: farmer?.name || 'Farmer',
+  };
+
+  renderView(req, res, 'listing_detail.html', {
+    listing: listingWithFarmer,
+    user: currentUser,
+    is_wishlisted: isWishlisted,
+  });
+});
+
+app.post('/order/place', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  if (user.role !== 'buyer') {
+    req.flash('Only registered buyers can place purchase offers.', 'danger');
+    return res.redirect('/marketplace');
+  }
+
+  const listingId = parseInt(req.body.listing_id, 10);
+  const listing = listings.get(listingId);
+  if (!listing) {
+    req.flash('Listing not found.', 'danger');
+    return res.redirect('/marketplace');
+  }
+
+  const quantity = parseFloat(req.body.quantity);
+  const offeredPrice = parseFloat(req.body.offered_price);
+  const notes = (req.body.notes || '').trim();
+
+  if (isNaN(quantity) || quantity <= 0) {
+    req.flash('Please enter a valid quantity.', 'danger');
+    return res.redirect(`/listing/${listingId}`);
+  }
+
+  if (quantity > listing.quantity) {
+    req.flash(`Quantity requested (${quantity}) exceeds available stock (${listing.quantity} ${listing.unit}).`, 'danger');
+    return res.redirect(`/listing/${listingId}`);
+  }
+
+  if (isNaN(offeredPrice) || offeredPrice <= 0) {
+    req.flash('Please enter a valid offered price.', 'danger');
+    return res.redirect(`/listing/${listingId}`);
+  }
+
+  const newOrderId = orderSeq++;
+  const now = formatDateShort();
+
+  const newOrder: Order = {
+    id: newOrderId,
+    buyer_id: user.id,
+    listing_id: listingId,
+    quantity,
+    offered_price: offeredPrice,
+    notes,
+    status: 'pending',
+    created_at: now,
+    updated_at: now,
+  };
+
+  orders.set(newOrderId, newOrder);
+  req.flash(`Your purchase offer for ${listing.crop_name} has been placed successfully!`, 'success');
+  res.redirect('/buyer/orders');
+});
+
+// Buyer Orders List
+app.get('/buyer/orders', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  if (user.role !== 'buyer') {
+    return renderView(req, res, '403.html', { message: 'Reserved for buyer accounts.' }, 403);
+  }
+
+  const userOrders = Array.from(orders.values()).filter(o => o.buyer_id === user.id).sort((a, b) => b.id - a.id);
+  const detailedOrders = userOrders.map(o => {
+    const listing = listings.get(o.listing_id);
+    const farmer = listing ? users.get(listing.user_id) : null;
+    return {
+      ...o,
+      crop_name: listing?.crop_name || 'Crop',
+      unit: listing?.unit || 'quintal',
+      state: listing?.state || '',
+      district: listing?.district || '',
+      farmer_name: farmer?.name || 'Farmer',
+      farmer_phone: farmer?.phone || '',
+    };
+  });
+
+  const stats = {
+    total: userOrders.length,
+    pending: userOrders.filter(o => o.status === 'pending').length,
+    accepted: userOrders.filter(o => o.status === 'accepted').length,
+    completed: userOrders.filter(o => o.status === 'completed').length,
+  };
+
+  renderView(req, res, 'buyer_orders.html', {
+    user,
+    orders: detailedOrders,
+    stats,
+  });
+});
+
+app.post('/order/cancel/:id', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  const orderId = parseInt(req.params.id, 10);
+  const order = orders.get(orderId);
+
+  if (order && order.buyer_id === user.id && order.status === 'pending') {
+    order.status = 'cancelled';
+    order.updated_at = formatDateShort();
+    req.flash('Order offer cancelled.', 'info');
+  }
+
+  res.redirect('/buyer/orders');
+});
+
+// Farmer Incoming Orders
+app.get('/farmer/orders', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  if (user.role === 'buyer') {
+    return renderView(req, res, '403.html', { message: 'Reserved for farmer accounts.' }, 403);
+  }
+
+  const farmerListings = Array.from(listings.values()).filter(l => l.user_id === user.id);
+  const farmerListingIds = new Set(farmerListings.map(l => l.id));
+
+  const incomingOrders = Array.from(orders.values()).filter(o => farmerListingIds.has(o.listing_id)).sort((a, b) => b.id - a.id);
+  const detailedIncoming = incomingOrders.map(o => {
+    const listing = listings.get(o.listing_id);
+    const buyer = users.get(o.buyer_id);
+    return {
+      ...o,
+      crop_name: listing?.crop_name || 'Crop',
+      unit: listing?.unit || 'quintal',
+      buyer_name: buyer?.name || 'Buyer',
+      buyer_phone: buyer?.phone || '',
+      organisation_name: buyer?.organisation_name || '',
+    };
+  });
+
+  renderView(req, res, 'farmer_orders.html', {
+    user,
+    orders: detailedIncoming,
+  });
+});
+
+app.post('/order/accept/:id', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  const orderId = parseInt(req.params.id, 10);
+  const order = orders.get(orderId);
+
+  if (order) {
+    const listing = listings.get(order.listing_id);
+    if (listing && listing.user_id === user.id) {
+      order.status = 'accepted';
+      order.updated_at = formatDateShort();
+      req.flash('Order offer accepted!', 'success');
+    }
+  }
+
+  res.redirect('/farmer/orders');
+});
+
+app.post('/order/reject/:id', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  const orderId = parseInt(req.params.id, 10);
+  const order = orders.get(orderId);
+
+  if (order) {
+    const listing = listings.get(order.listing_id);
+    if (listing && listing.user_id === user.id) {
+      order.status = 'rejected';
+      order.updated_at = formatDateShort();
+      req.flash('Order offer rejected.', 'info');
+    }
+  }
+
+  res.redirect('/farmer/orders');
+});
+
+// Wishlist Routes
+app.post('/wishlist/toggle/:id', loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  const listingId = parseInt(req.params.id, 10);
+
+  let existingKey: number | null = null;
+  for (const [k, w] of wishlists.entries()) {
+    if (w.buyer_id === user.id && w.listing_id === listingId) {
+      existingKey = k;
+      break;
+    }
+  }
+
+  if (existingKey !== null) {
+    wishlists.delete(existingKey);
+    req.flash('Removed from wishlist.', 'info');
+  } else {
+    const wId = wishlistSeq++;
+    wishlists.set(wId, {
+      id: wId,
+      buyer_id: user.id,
+      listing_id: listingId,
+      created_at: formatDateShort(),
+    });
+    req.flash('Saved to wishlist!', 'success');
+  }
+
+  res.redirect(req.get('Referrer') || '/wishlist');
+});
+
+app.get(['/wishlist', '/buyer/wishlist'], loginRequired, (req, res) => {
+  const user = req.currentUser!;
+  const userWishlist = Array.from(wishlists.values()).filter(w => w.buyer_id === user.id);
+
+  const items = userWishlist.map(w => {
+    const listing = listings.get(w.listing_id);
+    const farmer = listing ? users.get(listing.user_id) : null;
+    return {
+      ...listing,
+      saved_at: w.created_at,
+      farmer_name: farmer?.name || 'Farmer',
+    };
+  }).filter(item => item.id !== undefined);
+
+  renderView(req, res, 'wishlist.html', {
+    user,
+    items,
+  });
+});
+
+// Buyer Profile
+app.get('/buyer/profile', loginRequired, (req, res) => {
+  res.redirect('/profile');
 });
 
 // Dashboard
@@ -1365,6 +1944,15 @@ app.post('/profile', loginRequired, (req, res) => {
   user.land_size = data.land_size ? parseFloat(data.land_size) : null;
   user.preferred_crop = data.preferred_crop || null;
 
+  if (req.body.preferred_language) {
+    const lang = (req.body.preferred_language || '').trim();
+    if (LANGUAGES.some(l => l.code === lang)) {
+      user.preferred_language = lang;
+      if (req.session) req.session.lang = lang;
+      res.cookie('ag_lang', lang, { maxAge: 31536000000, httpOnly: false });
+    }
+  }
+
   req.flash('Your profile has been updated.', 'success');
   res.redirect('/profile');
 });
@@ -1388,11 +1976,22 @@ app.get('/marketplace', (req, res) => {
 
   if (f.q) {
     const qLower = f.q.toLowerCase();
-    filtered = filtered.filter(
-      l =>
-        l.crop_name.toLowerCase().includes(qLower) ||
-        (l.description && l.description.toLowerCase().includes(qLower))
-    );
+    const matchedCanonicalCrops: string[] = [];
+    for (const [canonicalCrop, aliases] of Object.entries(CROP_ALIASES)) {
+      if (aliases.some(a => a.toLowerCase().includes(qLower) || qLower.includes(a.toLowerCase()))) {
+        matchedCanonicalCrops.push(canonicalCrop.toLowerCase());
+      }
+    }
+
+    filtered = filtered.filter(l => {
+      const cropLower = l.crop_name.toLowerCase();
+      const matchesAlias = matchedCanonicalCrops.some(mc => cropLower.includes(mc) || mc.includes(cropLower));
+      const matchesText = cropLower.includes(qLower) ||
+                          (l.description && l.description.toLowerCase().includes(qLower)) ||
+                          (l.state && l.state.toLowerCase().includes(qLower)) ||
+                          (l.district && l.district.toLowerCase().includes(qLower));
+      return matchesAlias || matchesText;
+    });
   }
 
   if (f.state) {

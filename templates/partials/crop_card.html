@@ -1,14 +1,5 @@
 {# =========================================================================
    partials/crop_card.html — one marketplace / dashboard crop listing card
-
-   Required context : `listing`
-   Optional context : `show_owner_actions` (bool) — renders Edit / Delete controls
-                      `current_user` — used to detect the owner of the listing
-
-   Listing fields used (works with ORM objects AND plain dicts):
-     id, crop_name, quantity, unit, expected_price, state, district,
-     availability_date, description, farmer_name, contact_info, image_url,
-     status, created_at
    ========================================================================= #}
 {% set status = (listing.status or 'available')|lower %}
 {% set price = listing.expected_price %}
@@ -18,8 +9,7 @@
 <div class="card card-ag card-ag-hover listing-card">
   <div class="listing-media">
     <img src="{{ listing.image_url or url_for('static', filename='images/crop-placeholder.jpg') }}"
-         alt="{% if listing.image_url %}Photo of {{ listing.crop_name }} listed for sale{% else %}No photo provided for {{ listing.crop_name }}{% endif %}"
-         loading="lazy" decoding="async" data-ag-fallback>
+         alt="{{ listing.crop_name }}" loading="lazy" decoding="async" data-ag-fallback>
     <div class="media-fallback d-none" data-ag-fallback-target aria-hidden="true">
       <i class="bi bi-flower2"></i>
     </div>
@@ -29,16 +19,14 @@
         <span class="badge-soft"><i class="bi bi-check2-circle" aria-hidden="true"></i> Available</span>
       {% elif status == 'reserved' %}
         <span class="badge-soft badge-soft-warning"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Reserved</span>
-      {% elif status in ['sold', 'closed'] %}
-        <span class="badge-soft badge-soft-neutral"><i class="bi bi-bag-check" aria-hidden="true"></i> Closed</span>
       {% else %}
-        <span class="badge-soft badge-soft-neutral"><i class="bi bi-dash-circle" aria-hidden="true"></i> {{ status|capitalize }}</span>
+        <span class="badge-soft badge-soft-neutral"><i class="bi bi-bag-check" aria-hidden="true"></i> Closed</span>
       {% endif %}
     </div>
 
     {% if price %}
       <span class="listing-price">
-        <i class="bi bi-currency-rupee" aria-hidden="true"></i>{{ '{:,.0f}'.format(price) if price is number else price }}
+        <i class="bi bi-currency-rupee" aria-hidden="true"></i>{{ price | format_number }}
         <span class="fw-normal">/ {{ unit }}</span>
       </span>
     {% else %}
@@ -74,8 +62,8 @@
 
     {% if listing.farmer_name %}
       <div class="listing-owner mt-auto">
-        <span class="avatar-circle" style="width:26px;height:26px;font-size:.7rem;" aria-hidden="true">{{ (listing.farmer_name or 'F').slice(0, 2)|upper }}</span>
-        <span class="text-truncate">Listed by {{ listing.farmer_name }}</span>
+        <span class="avatar-circle" style="width:26px;height:26px;font-size:.7rem;" aria-hidden="true">{{ (listing.farmer_name or 'F')|initials }}</span>
+        <span class="text-truncate">{{ listing.farmer_name }}</span>
       </div>
     {% endif %}
   </div>
@@ -83,95 +71,46 @@
   <div class="card-footer d-flex flex-wrap gap-2 align-items-center">
     <button type="button" class="btn btn-sm btn-ag-outline flex-grow-1"
             data-bs-toggle="modal" data-bs-target="#{{ modal_id }}">
-      <i class="bi bi-eye" aria-hidden="true"></i>View Details
+      <i class="bi bi-eye me-1" aria-hidden="true"></i><span data-i18n="common.viewDetails">{{ t('common.viewDetails') }}</span>
     </button>
 
     {% if listing.contact_info %}
       <a class="btn btn-sm btn-ag-primary flex-grow-1"
          href="{% if '@' in listing.contact_info|string %}mailto:{{ listing.contact_info }}{% else %}tel:{{ listing.contact_info }}{% endif %}">
-        <i class="bi bi-telephone-outbound" aria-hidden="true"></i>Contact Farmer
+        <i class="bi bi-telephone-outbound me-1" aria-hidden="true"></i><span data-i18n="common.contactFarmer">{{ t('common.contactFarmer') }}</span>
       </a>
     {% endif %}
 
     {% if show_owner_actions %}
       <a class="btn btn-sm btn-ag-light" href="{{ url_for('edit_listing', listing_id=listing.id) }}">
-        <i class="bi bi-pencil" aria-hidden="true"></i>
-        <span class="d-none d-sm-inline">Edit</span>
+        <i class="bi bi-pencil me-1" aria-hidden="true"></i><span data-i18n="common.edit">{{ t('common.edit') }}</span>
       </a>
-      <form method="post" action="{{ url_for('delete_listing', listing_id=listing.id) }}" class="d-inline">
-        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-        <button type="button" class="btn btn-sm btn-outline-danger"
-                data-ag-confirm-modal="Delete the listing for {{ listing.crop_name }}? This cannot be undone."
-                data-ag-modal-title-text="Delete crop listing"
-                data-ag-modal-ok="Yes, delete it"
-                data-ag-modal-ok-class="btn-danger">
-          <i class="bi bi-trash" aria-hidden="true"></i>
-          <span class="d-none d-sm-inline">Delete</span>
-        </button>
-      </form>
     {% endif %}
   </div>
 </div>
 
-{# ------------------------- Listing details modal ------------------------- #}
+<!-- Modal Details -->
 <div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="border-radius: var(--ag-radius);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="{{ modal_id }}Label">
-          <i class="bi bi-basket2 text-success" aria-hidden="true"></i> {{ listing.crop_name }} — listing details
-        </h5>
+        <h5 class="modal-title" id="{{ modal_id }}Label">{{ listing.crop_name }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-md-5">
-            <img src="{{ listing.image_url or url_for('static', filename='images/crop-placeholder.jpg') }}"
-                 alt="{{ listing.crop_name }} crop" class="img-fluid rounded" style="object-fit:cover;max-height:220px;width:100%;" loading="lazy">
-          </div>
-          <div class="col-md-7">
-            <dl class="row mb-0 small">
-              <dt class="col-5 text-muted-ag">Quantity</dt>
-              <dd class="col-7">{{ listing.quantity }} {{ unit }}</dd>
-
-              <dt class="col-5 text-muted-ag">Expected price</dt>
-              <dd class="col-7">
-                {% if price %}₹ {{ '{:,.0f}'.format(price) if price is number else price }} per {{ unit }}{% else %}Price on request{% endif %}
-              </dd>
-
-              <dt class="col-5 text-muted-ag">Location</dt>
-              <dd class="col-7">{{ listing.district }}{{ ', ' ~ listing.state if listing.state else '—' }}</dd>
-
-              <dt class="col-5 text-muted-ag">Available from</dt>
-              <dd class="col-7">{{ listing.availability_date or 'Not specified' }}</dd>
-
-              <dt class="col-5 text-muted-ag">Listed by</dt>
-              <dd class="col-7">{{ listing.farmer_name or 'Registered farmer' }}</dd>
-
-              <dt class="col-5 text-muted-ag">Listed on</dt>
-              <dd class="col-7">{{ listing.created_at or '—' }}</dd>
-            </dl>
-          </div>
-          <div class="col-12">
-            <h6 class="small-caps text-muted-ag mb-1">Description</h6>
-            <p class="mb-0">{{ listing.description or 'No additional description was provided for this listing.' }}</p>
-          </div>
-        </div>
+        <p><strong><span data-i18n="marketplace.quantity">{{ t('marketplace.quantity') }}</span>:</strong> {{ listing.quantity }} {{ unit }}</p>
+        <p><strong><span data-i18n="marketplace.expectedPrice">{{ t('marketplace.expectedPrice') }}</span>:</strong> ₹{{ listing.expected_price or 'Price on request' }}</p>
+        <p><strong><span data-i18n="marketplace.location">{{ t('marketplace.location') }}</span>:</strong> {{ listing.district }}, {{ listing.state }}</p>
+        {% if listing.description %}
+          <p><strong>Description:</strong> {{ listing.description }}</p>
+        {% endif %}
+        {% if listing.contact_info %}
+          <p class="mb-0"><strong><span data-i18n="marketplace.seller">{{ t('marketplace.seller') }}</span>:</strong> {{ listing.farmer_name }} ({{ listing.contact_info }})</p>
+        {% endif %}
       </div>
-      <div class="modal-footer flex-wrap justify-content-between">
-        <span class="text-muted-ag small">
-          <i class="bi bi-info-circle" aria-hidden="true"></i>
-          AGRICONNECT only helps you connect — it does not process payments.
-        </span>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-ag-light" data-bs-dismiss="modal">Close</button>
-          {% if listing.contact_info %}
-            <a class="btn btn-ag-primary"
-               href="{% if '@' in listing.contact_info|string %}mailto:{{ listing.contact_info }}{% else %}tel:{{ listing.contact_info }}{% endif %}">
-              <i class="bi bi-telephone-outbound" aria-hidden="true"></i>Contact Farmer
-            </a>
-          {% endif %}
-        </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">{{ t('common.cancel') }}</button>
+        <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="btn btn-ag-primary"><i class="bi bi-bag-plus me-1"></i>View Full Page & Place Offer</a>
       </div>
     </div>
   </div>

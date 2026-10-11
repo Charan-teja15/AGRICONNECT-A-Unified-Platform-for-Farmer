@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist — AGRICONNECT{% endblock %}
+{% block description %}View and manage your saved crop listings on AGRICONNECT.{% endblock %}
+
+{% block content %}
+<section class="page-header py-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
+  <div class="container-xxl">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
+          <a href="{{ url_for('index') }}" class="text-white-50 text-decoration-none">Home</a>
+          <span class="mx-1 text-white-50">/</span>
+          <a href="{{ url_for('buyer_dashboard') }}" class="text-white-50 text-decoration-none">Dashboard</a>
+          <span class="mx-1 text-white-50">/</span>
+          <span class="text-white">Wishlist</span>
+        </nav>
+        <h1 class="h3 fw-bold text-white mb-0">Saved Crop Wishlist</h1>
+      </div>
+      <div>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-ag-primary">
+          <i class="bi bi-basket2 me-1"></i>Browse Marketplace
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-4 bg-light">
+  <div class="container-xxl">
+
+    {% if items and items|length > 0 %}
+      <div class="row g-3">
+        {% for item in items %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 card-ag shadow-sm border-0 p-3 d-flex flex-column justify-content-between">
+              <div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="badge bg-success-subtle text-success border border-success border-opacity-25">{{ item.unit }}</span>
+                  <span class="fw-bold text-success fs-5">
+                    ₹{{ item.expected_price }}
+                    <small class="text-muted fs-8 fw-normal">/ {{ item.unit }}</small>
+                  </span>
+                </div>
+
+                <h2 class="h5 fw-bold mb-1 text-dark">{{ item.crop_name }}</h2>
+                <p class="small text-muted mb-2">
+                  <i class="bi bi-box-seam me-1"></i><strong>{{ item.quantity }}</strong> {{ item.unit }}s available
+                </p>
+                <p class="small text-muted mb-2">
+                  <i class="bi bi-geo-alt me-1"></i>{{ item.district }}, {{ item.state }}
+                </p>
+
+                {% if item.description %}
+                  <p class="small text-muted text-truncate mb-3">{{ item.description }}</p>
+                {% endif %}
+              </div>
+
+              <div class="pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small text-muted"><i class="bi bi-person me-1"></i>{{ item.farmer_name or 'Farmer' }}</span>
+                  <span class="small text-muted"><i class="bi bi-clock me-1"></i>Saved {{ item.saved_at or '' }}</span>
+                </div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('listing_detail', listing_id=item.id) }}" class="btn btn-ag-primary btn-sm flex-grow-1">
+                    <i class="bi bi-bag-plus me-1"></i>Place Offer
+                  </a>
+                  <form method="post" action="{{ url_for('toggle_wishlist', listing_id=item.id) }}" class="d-inline">
+                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove from wishlist">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5 bg-white rounded-3 shadow-sm p-4">
+        <i class="bi bi-heart text-muted fs-1 d-block mb-3"></i>
+        <h2 class="h5 fw-bold text-dark mb-1">Your wishlist is currently empty</h2>
+        <p class="text-muted small mb-3">Save crop lots while browsing the marketplace to compare prices and order later.</p>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-ag-primary btn-sm">Explore Marketplace</a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

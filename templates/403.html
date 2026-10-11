@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Access Restricted — AGRICONNECT{% endblock %}
+{% block description %}Access to this section requires specific account permissions.{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container-xxl">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-xl-7">
+
+        <div class="card card-ag shadow-sm border-warning border-opacity-25">
+          <div class="card-body p-4 p-lg-5 text-center">
+            <div class="es-icon mx-auto mb-3" style="background: #fef3c7; color: #b45309; width: 64px; height: 64px; font-size: 1.75rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+              <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            </div>
+
+            <p class="small-caps text-muted-ag mb-1">Error 403 · Access Restricted</p>
+            <h1 class="h3 mb-2">Role Permission Required</h1>
+            <p class="text-muted-ag mb-4">
+              {{ message or "This section is not accessible with your current account role. Different services on AGRICONNECT are tailored specifically for farmers and buyers." }}
+            </p>
+
+            <div class="p-3 mb-4 rounded text-start" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small">Your current role:</span>
+                <span class="badge bg-secondary text-uppercase">{{ current_user.role if current_user and current_user.role else 'Unauthenticated' }}</span>
+              </div>
+              <p class="small text-muted mb-0">
+                {% if current_user and current_user.role == 'buyer' %}
+                  As a registered buyer, you can browse verified crop listings in the marketplace and contact farmers directly. Crop advisory and government subsidy tools are dedicated to cultivating farmers.
+                {% elif current_user and current_user.role == 'farmer' %}
+                  As a registered farmer, your dashboard provides crop advisory, subsidy discovery, and harvest listing tools. The buyer portal is reserved for trading and purchasing partners.
+                {% else %}
+                  Please sign in with the appropriate account to access this page.
+                {% endif %}
+              </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
+              {% if current_user and current_user.role == 'buyer' %}
+                <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-ag-primary">
+                  <i class="bi bi-grid-1x2" aria-hidden="true"></i>Buyer Dashboard
+                </a>
+                <a href="{{ url_for('marketplace') }}" class="btn btn-ag-outline">
+                  <i class="bi bi-basket2" aria-hidden="true"></i>Browse Marketplace
+                </a>
+              {% elif current_user and current_user.role == 'farmer' %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-ag-primary">
+                  <i class="bi bi-grid-1x2" aria-hidden="true"></i>Farmer Dashboard
+                </a>
+                <a href="{{ url_for('marketplace') }}" class="btn btn-ag-outline">
+                  <i class="bi bi-basket2" aria-hidden="true"></i>Marketplace
+                </a>
+              {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-ag-primary">
+                  <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Sign In
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-ag-outline">
+                  <i class="bi bi-house-door" aria-hidden="true"></i>Home
+                </a>
+              {% endif %}
+            </div>
+
+            {% if request and request.path %}
+              <p class="small text-muted-ag mb-0">
+                Requested section: <code>{{ request.path }}</code>
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

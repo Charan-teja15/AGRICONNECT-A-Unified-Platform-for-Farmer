@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}AGRICONNECT — Connecting Farmers to Markets, Knowledge and Government Support{% endblock %}
-{% block description %}AGRICONNECT helps farmers find buyers for their crops, receive rule-based crop guidance, and explore government schemes that may match their farming profile.{% endblock %}
+{% block title %}{{ t('appName') }} — {{ t('tagline') }}{% endblock %}
+{% block description %}{{ t('home.heroSubtitle') }}{% endblock %}
 
 {% block content %}
 
@@ -12,53 +12,50 @@
       <div class="col-lg-6">
         <span class="hero-pill mb-3">
           <i class="bi bi-flower2" aria-hidden="true"></i>
-          Farmer-first platform · College project prototype
+          <span data-i18n="tagline">{{ t('tagline') }}</span>
         </span>
 
-        <h1 id="heroHeading" class="mb-3">One Platform. Three Powerful Solutions&nbsp;for&nbsp;Farmers.</h1>
+        <h1 id="heroHeading" class="mb-3" data-i18n="home.heroTitle">{{ t('home.heroTitle') }}</h1>
 
-        <p class="hero-lead mb-4">
-          Find buyers for your crops, receive useful crop guidance, and discover
-          government schemes that may match your farming needs.
+        <p class="hero-lead mb-4" data-i18n="home.heroSubtitle">
+          {{ t('home.heroSubtitle') }}
         </p>
 
         <div class="d-flex flex-wrap gap-2 hero-cta mb-4">
           <a href="{{ url_for('marketplace') }}" class="btn btn-ag-accent btn-lg">
-            <i class="bi bi-basket2" aria-hidden="true"></i>Explore Marketplace
+            <i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span>
           </a>
           <a href="{{ url_for('crop_advisory') }}" class="btn btn-outline-light btn-lg">
-            <i class="bi bi-flower2" aria-hidden="true"></i>Get Crop Advice
+            <i class="bi bi-flower2" aria-hidden="true"></i><span data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span>
           </a>
           <a href="{{ url_for('subsidy_checker') }}" class="btn btn-outline-light btn-lg">
-            <i class="bi bi-bank2" aria-hidden="true"></i>Check Subsidy Eligibility
+            <i class="bi bi-bank2" aria-hidden="true"></i><span data-i18n="nav.schemes">{{ t('nav.schemes') }}</span>
           </a>
         </div>
 
         <ul class="list-unstyled d-flex flex-wrap gap-3 mb-0 small" style="color: rgba(255,255,255,.86);">
-          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> No payments processed</li>
-          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> Explainable rule-based guidance</li>
-          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> Works on any modern browser</li>
+          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> <span data-i18n="home.feat1Title">{{ t('home.feat1Title') }}</span></li>
+          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> <span data-i18n="home.feat2Title">{{ t('home.feat2Title') }}</span></li>
+          <li><i class="bi bi-check-circle-fill text-warning" aria-hidden="true"></i> <span data-i18n="home.feat3Title">{{ t('home.feat3Title') }}</span></li>
         </ul>
 
-        {# Optional live counters — only rendered when the backend supplies
-           `public_stats` (see BACKEND_INTEGRATION.md). #}
         {% if public_stats %}
         <div class="d-flex flex-wrap gap-3 mt-4 pt-3 border-top border-light border-opacity-25">
           <div>
             <div class="fs-4 fw-bold text-white">{{ public_stats.listings|default(0) }}</div>
-            <div class="small" style="color: rgba(255,255,255,.7);">Active crop listings</div>
+            <div class="small" style="color: rgba(255,255,255,.7);" data-i18n="dashboard.activeListings">{{ t('dashboard.activeListings') }}</div>
           </div>
           <div>
             <div class="fs-4 fw-bold text-white">{{ public_stats.crops|default(0) }}</div>
-            <div class="small" style="color: rgba(255,255,255,.7);">Crop varieties listed</div>
+            <div class="small" style="color: rgba(255,255,255,.7);" data-i18n="marketplace.allCrops">{{ t('marketplace.allCrops') }}</div>
           </div>
           <div>
             <div class="fs-4 fw-bold text-white">{{ public_stats.schemes|default(0) }}</div>
-            <div class="small" style="color: rgba(255,255,255,.7);">Schemes in database</div>
+            <div class="small" style="color: rgba(255,255,255,.7);" data-i18n="nav.schemes">{{ t('nav.schemes') }}</div>
           </div>
           <div>
             <div class="fs-4 fw-bold text-white">{{ public_stats.farmers|default(0) }}</div>
-            <div class="small" style="color: rgba(255,255,255,.7);">Registered farmers</div>
+            <div class="small" style="color: rgba(255,255,255,.7);" data-i18n="roles.farmer">{{ t('roles.farmer') }}</div>
           </div>
         </div>
         {% endif %}
@@ -67,13 +64,13 @@
       <div class="col-lg-6">
         <figure class="hero-figure mb-0">
           <img src="{{ url_for('static', filename='images/hero-field.jpg') }}"
-               alt="A farmer walking through a green paddy field with freshly harvested produce"
+               alt="AGRICONNECT"
                width="1600" height="878" fetchpriority="high"
                onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/hero-field-fallback.svg') }}';">
           <div class="hero-stat-strip">
-            <span class="hero-chip"><i class="bi bi-basket2" aria-hidden="true"></i> Marketplace</span>
-            <span class="hero-chip"><i class="bi bi-flower2" aria-hidden="true"></i> Crop advisory</span>
-            <span class="hero-chip"><i class="bi bi-bank2" aria-hidden="true"></i> Subsidies</span>
+            <span class="hero-chip"><i class="bi bi-basket2" aria-hidden="true"></i> <span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span></span>
+            <span class="hero-chip"><i class="bi bi-flower2" aria-hidden="true"></i> <span data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span></span>
+            <span class="hero-chip"><i class="bi bi-bank2" aria-hidden="true"></i> <span data-i18n="nav.schemes">{{ t('nav.schemes') }}</span></span>
           </div>
         </figure>
       </div>
@@ -85,11 +82,10 @@
 <section class="section-pad" aria-labelledby="servicesHeading">
   <div class="container-xxl">
     <div class="section-head mx-auto text-center mb-5">
-      <span class="eyebrow">What AGRICONNECT does</span>
-      <h2 id="servicesHeading" class="mt-2 mb-2">Three connected services for everyday farming decisions</h2>
-      <p class="text-muted-ag mb-0">
-        Everything a farmer needs before, during and after harvest — in one
-        place, with plain-language explanations at every step.
+      <span class="eyebrow" data-i18n="appName">{{ t('appName') }}</span>
+      <h2 id="servicesHeading" class="mt-2 mb-2" data-i18n="home.heroTitle">{{ t('home.heroTitle') }}</h2>
+      <p class="text-muted-ag mb-0" data-i18n="home.heroSubtitle">
+        {{ t('home.heroSubtitle') }}
       </p>
     </div>
 
@@ -102,18 +98,13 @@
             <div class="service-top mb-3">
               <span class="icon-tile"><i class="bi bi-basket2" aria-hidden="true"></i></span>
               <div>
-                <h3>Farmer Marketplace</h3>
-                <span class="small-caps text-muted-ag">Sell &amp; connect</span>
+                <h3 data-i18n="home.feat1Title">{{ t('home.feat1Title') }}</h3>
+                <span class="small-caps text-muted-ag" data-i18n="roles.farmer">{{ t('roles.farmer') }}</span>
               </div>
             </div>
-            <p>Find crop listings and connect with potential buyers.</p>
-            <ul class="small text-muted-ag mb-4 ps-3">
-              <li>Publish your harvest with quantity and expected price</li>
-              <li>Search crops by name, state and district</li>
-              <li>Contact farmers directly — no payment handling</li>
-            </ul>
+            <p data-i18n="home.feat1Desc">{{ t('home.feat1Desc') }}</p>
             <a href="{{ url_for('marketplace') }}" class="btn btn-ag-outline mt-auto">
-              <i class="bi bi-basket2" aria-hidden="true"></i>Explore Marketplace
+              <i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span>
             </a>
           </div>
         </article>
@@ -127,18 +118,13 @@
             <div class="service-top mb-3">
               <span class="icon-tile"><i class="bi bi-flower2" aria-hidden="true"></i></span>
               <div>
-                <h3>Crop Advisory</h3>
-                <span class="small-caps text-muted-ag">Understand your crop</span>
+                <h3 data-i18n="home.feat2Title">{{ t('home.feat2Title') }}</h3>
+                <span class="small-caps text-muted-ag" data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span>
               </div>
             </div>
-            <p>Receive understandable, rule-based guidance based on crop conditions and reported symptoms.</p>
-            <ul class="small text-muted-ag mb-4 ps-3">
-              <li>Describe the growth stage, soil and symptoms</li>
-              <li>See exactly which rule produced the advice</li>
-              <li>Get practical next steps, with clear cautions</li>
-            </ul>
+            <p data-i18n="home.feat2Desc">{{ t('home.feat2Desc') }}</p>
             <a href="{{ url_for('crop_advisory') }}" class="btn btn-ag-outline mt-auto">
-              <i class="bi bi-flower2" aria-hidden="true"></i>Get Crop Advice
+              <i class="bi bi-flower2" aria-hidden="true"></i><span data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span>
             </a>
           </div>
         </article>
@@ -152,18 +138,13 @@
             <div class="service-top mb-3">
               <span class="icon-tile icon-tile-accent"><i class="bi bi-bank2" aria-hidden="true"></i></span>
               <div>
-                <h3>Government Subsidy Awareness</h3>
-                <span class="small-caps text-muted-ag">Know what you can apply for</span>
+                <h3 data-i18n="home.feat3Title">{{ t('home.feat3Title') }}</h3>
+                <span class="small-caps text-muted-ag" data-i18n="nav.schemes">{{ t('nav.schemes') }}</span>
               </div>
             </div>
-            <p>Explore government schemes based on your farming profile and eligibility information.</p>
-            <ul class="small text-muted-ag mb-4 ps-3">
-              <li>Enter state, district, land size and crop type</li>
-              <li>See why each scheme matched your profile</li>
-              <li>Review documents and verification conditions</li>
-            </ul>
+            <p data-i18n="home.feat3Desc">{{ t('home.feat3Desc') }}</p>
             <a href="{{ url_for('subsidy_checker') }}" class="btn btn-ag-outline mt-auto">
-              <i class="bi bi-patch-check" aria-hidden="true"></i>Check Eligibility
+              <i class="bi bi-bank2" aria-hidden="true"></i><span data-i18n="nav.schemes">{{ t('nav.schemes') }}</span>
             </a>
           </div>
         </article>
@@ -172,150 +153,20 @@
   </div>
 </section>
 
-<!-- =================== FEATURED LISTINGS (dynamic) =================== -->
-{# Rendered only when the backend passes `featured_listings`. #}
-{% if featured_listings %}
-<section class="pb-5" aria-labelledby="featuredHeading">
+<!-- ========================= CTA ROLE CHOICE ========================= -->
+<section class="bg-light-green py-5">
   <div class="container-xxl">
-    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-      <div>
-        <span class="eyebrow">Fresh from the marketplace</span>
-        <h2 id="featuredHeading" class="h4 mt-2 mb-0">Recently added crop listings</h2>
+    <div class="row align-items-center justify-content-between g-4">
+      <div class="col-lg-8">
+        <h2 class="h3 mb-2" data-i18n="register.title">{{ t('register.title') }}</h2>
+        <p class="text-muted-ag mb-0" data-i18n="register.subtitle">
+          {{ t('register.subtitle') }}
+        </p>
       </div>
-      <a href="{{ url_for('marketplace') }}" class="btn btn-ag-light btn-sm">
-        View all listings <i class="bi bi-arrow-right" aria-hidden="true"></i>
-      </a>
-    </div>
-    <div class="row g-4">
-      {% for listing in featured_listings %}
-        <div class="col-lg-4 col-md-6">
-          {% include 'partials/crop_card.html' %}
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
-<!-- =========================== HOW IT WORKS ========================== -->
-<section class="section-pad" style="background:#fff; border-top:1px solid var(--ag-border); border-bottom:1px solid var(--ag-border);" aria-labelledby="howHeading">
-  <div class="container-xxl">
-    <div class="section-head mx-auto text-center mb-5">
-      <span class="eyebrow">How it works</span>
-      <h2 id="howHeading" class="mt-2 mb-2">Three simple steps</h2>
-      <p class="text-muted-ag mb-0">No training required — if you can fill a form, you can use AGRICONNECT.</p>
-    </div>
-
-    <div class="row g-4 text-center text-md-start">
-      <div class="col-md-4">
-        <div class="step-item reveal">
-          <span class="step-connector" aria-hidden="true"></span>
-          <span class="step-number mb-3 d-inline-flex">1</span>
-          <h3 class="h5">Create your farmer profile</h3>
-          <p class="text-muted-ag mb-0">
-            Register with your name, contact details, state, district and land
-            details so the platform can personalise your results.
-          </p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="step-item reveal">
-          <span class="step-connector" aria-hidden="true"></span>
-          <span class="step-number mb-3 d-inline-flex">2</span>
-          <h3 class="h5">Enter your crop or farming information</h3>
-          <p class="text-muted-ag mb-0">
-            Add a crop listing, describe your crop condition, or share your
-            landholding details for scheme matching.
-          </p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="step-item reveal">
-          <span class="step-number mb-3 d-inline-flex">3</span>
-          <h3 class="h5">Explore relevant listings, advice, or scheme matches</h3>
-          <p class="text-muted-ag mb-0">
-            Review results with clear explanations, then act on them with the
-            confidence of knowing why they were suggested.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ========================== WHY AGRICONNECT ======================== -->
-<section class="section-pad" aria-labelledby="whyHeading">
-  <div class="container-xxl">
-    <div class="section-head mx-auto text-center mb-5">
-      <span class="eyebrow">Why AGRICONNECT</span>
-      <h2 id="whyHeading" class="mt-2 mb-2">Built for clarity, not complexity</h2>
-      <p class="text-muted-ag mb-0">Every screen is designed to be understandable at a glance — even for first-time smartphone users.</p>
-    </div>
-
-    <div class="row g-4">
-      <div class="col-lg-3 col-md-6">
-        <div class="card card-ag benefit-card reveal h-100">
-          <div class="card-body">
-            <span class="icon-tile icon-tile-sm mb-3"><i class="bi bi-grid-1x2" aria-hidden="true"></i></span>
-            <h3>Three services in one place</h3>
-            <p>Marketplace, crop advisory and subsidy awareness share a single account and profile.</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 col-md-6">
-        <div class="card card-ag benefit-card reveal h-100">
-          <div class="card-body">
-            <span class="icon-tile icon-tile-sm mb-3"><i class="bi bi-emoji-smile" aria-hidden="true"></i></span>
-            <h3>Simple, beginner-friendly interface</h3>
-            <p>Large controls, plain language and step-by-step forms that work on any device.</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 col-md-6">
-        <div class="card card-ag benefit-card reveal h-100">
-          <div class="card-body">
-            <span class="icon-tile icon-tile-sm mb-3"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
-            <h3>Explainable rule-based recommendations</h3>
-            <p>Every advisory and scheme match shows the reasoning behind it — no unexplained black box.</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 col-md-6">
-        <div class="card card-ag benefit-card reveal h-100">
-          <div class="card-body">
-            <span class="icon-tile icon-tile-sm mb-3"><i class="bi bi-laptop" aria-hidden="true"></i></span>
-            <h3>Convenient browser access</h3>
-            <p>No app installation required — open it on a phone, tablet or a shared computer at the village centre.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================== CTA ================================ -->
-<section class="pb-5" aria-label="Get started">
-  <div class="container-xxl">
-    <div class="cta-band p-4 p-lg-5">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h2 class="h3 mb-2">Ready to put AGRICONNECT to work on your farm?</h2>
-          <p class="mb-0" style="color: rgba(255,255,255,.88);">
-            Create a free farmer profile and start exploring listings, crop
-            guidance and government scheme information today.
-          </p>
-        </div>
-        <div class="col-lg-4 text-lg-end">
-          {% if current_user and current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard') }}" class="btn btn-ag-accent btn-lg w-100 w-lg-auto">
-              <i class="bi bi-grid-1x2" aria-hidden="true"></i>Go to Dashboard
-            </a>
-          {% else %}
-            <a href="{{ url_for('register') }}" class="btn btn-ag-accent btn-lg w-100 w-lg-auto">
-              <i class="bi bi-person-plus" aria-hidden="true"></i>Create Farmer Profile
-            </a>
-          {% endif %}
-        </div>
+      <div class="col-lg-4 text-lg-end">
+        <a href="{{ url_for('register') }}" class="btn btn-ag-primary btn-lg">
+          <i class="bi bi-person-plus" aria-hidden="true"></i><span data-i18n="nav.register">{{ t('nav.register') }}</span>
+        </a>
       </div>
     </div>
   </div>

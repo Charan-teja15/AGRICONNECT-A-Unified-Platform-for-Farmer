@@ -60,7 +60,7 @@
             <div class="info-note mb-4 d-flex gap-3">
               <i class="bi bi-search fs-4 flex-shrink-0" aria-hidden="true"></i>
               <div>
-                <h2 class="h6 mb-1">No advisory rule matched your description</h2>
+                <h2 class="h6 mb-1">No matching advisory rule found for your description</h2>
                 <p class="mb-0">
                   The rule set configured in this application does not contain a
                   rule for this combination of crop, stage, soil and symptoms.
@@ -134,14 +134,14 @@
 
           {% endif %}
 
-          {# ------------------------------ Caution ----------------------------- #}
+          {# ------------------------------ Caution / Disclaimer ----------------------------- #}
           <div class="result-block block-caution">
             <h2>
-              <i class="bi bi-exclamation-triangle-fill text-danger" aria-hidden="true"></i>
-              Important caution
+              <i class="bi bi-shield-exclamation text-warning" aria-hidden="true"></i>
+              Important Disclaimer
             </h2>
             <p class="mb-0">
-              {{ advisory.caution or 'This guidance is informational and based on simplified rules. Field conditions vary widely — confirm with a local agriculture officer, Krishi Vigyan Kendra or a qualified agronomist before applying fertilisers or pesticides. AGRICONNECT does not guarantee any particular agricultural outcome.' }}
+              {{ advisory.caution or 'This advisory guidance is rule-based and informational only. Field conditions vary, so always verify with your local agricultural officer or Krishi Vigyan Kendra (KVK) before applying chemical sprays or fertilizers.' }}
             </p>
           </div>
 

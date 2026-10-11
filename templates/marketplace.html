@@ -1,14 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Farmer Marketplace — AGRICONNECT{% endblock %}
-{% block description %}Browse crop listings from farmers across India. Filter by crop name, state, district and expected price.{% endblock %}
-
-{# Backend contract (see BACKEND_INTEGRATION.md)
-     GET /marketplace -> listings[], states[], districts[], crops[],
-                          filters{} (q, state, district, min_price, max_price,
-                          sort, mine), result_count, pagination,
-                          sort_options[] (value,label)
-   Filters are submitted as GET query parameters so results can be shared. #}
+{% block title %}{{ t('marketplace.title') }} — {{ t('appName') }}{% endblock %}
+{% block description %}{{ t('marketplace.subtitle') }}{% endblock %}
 
 {% set f = filters if filters else {} %}
 {% set count = result_count if result_count is defined else (listings|length if listings else 0) %}
@@ -21,14 +14,14 @@
     <div class="row align-items-center g-3">
       <div class="col-lg-8">
         <nav aria-label="Breadcrumb" class="breadcrumb-ag mb-1">
-          <a href="{{ url_for('index') }}">Home</a> <span class="mx-1" aria-hidden="true">/</span> Marketplace
+          <a href="{{ url_for('index') }}" data-i18n="nav.home">{{ t('nav.home') }}</a> <span class="mx-1" aria-hidden="true">/</span> <span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span>
         </nav>
-        <h1 class="mb-1">Farmer Marketplace</h1>
-        <p class="text-muted-ag mb-0">Discover available crops and connect with farmers.</p>
+        <h1 class="mb-1" data-i18n="marketplace.title">{{ t('marketplace.title') }}</h1>
+        <p class="text-muted-ag mb-0" data-i18n="marketplace.subtitle">{{ t('marketplace.subtitle') }}</p>
       </div>
       <div class="col-lg-4 text-lg-end">
         <a href="{{ url_for('create_listing') }}" class="btn btn-ag-primary">
-          <i class="bi bi-plus-circle" aria-hidden="true"></i>Add Your Crop Listing
+          <i class="bi bi-plus-circle me-1" aria-hidden="true"></i><span data-i18n="nav.addListing">{{ t('nav.addListing') }}</span>
         </a>
       </div>
     </div>
@@ -46,7 +39,7 @@
             <div class="card-header bg-white border-bottom py-3 d-flex d-lg-none">
               <button class="btn btn-ag-outline w-100" type="button" data-bs-toggle="collapse"
                       data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel">
-                <i class="bi bi-funnel" aria-hidden="true"></i>Search &amp; filters
+                <i class="bi bi-funnel me-1" aria-hidden="true"></i><span data-i18n="common.filter">{{ t('common.filter') }}</span>
               </button>
             </div>
 
@@ -55,20 +48,25 @@
                     data-ag-validate novalidate>
 
                 <fieldset class="filter-fieldset mb-3">
-                  <legend class="mb-2">Search</legend>
+                  <legend class="mb-2" data-i18n="common.search">{{ t('common.search') }}</legend>
 
-                  <label for="q" class="form-label">Crop name</label>
+                  <label for="q" class="form-label" data-i18n="advisory.crop">{{ t('advisory.crop') }}</label>
                   <div class="input-group mb-2">
                     <span class="input-group-text bg-white" style="border-color:var(--ag-border-strong);">
                       <i class="bi bi-search text-muted" aria-hidden="true"></i>
                     </span>
                     <input type="search" class="form-control" id="q" name="q"
                            value="{{ f.q|default('', true) }}"
-                           placeholder="e.g. Paddy, Tomato"
+                           placeholder="{{ t('marketplace.searchPlaceholder') }}"
+                           data-i18n-placeholder="marketplace.searchPlaceholder"
                            list="cropSuggestions" maxlength="60"
                            aria-describedby="qHelp">
+                    <button class="btn btn-ag-light border border-start-0" type="button" id="voiceSearchBtn"
+                            title="Voice Search (Speak in Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, or English)"
+                            onclick="window.startVoiceSearch('q')">
+                      <i class="bi bi-mic-fill text-danger" aria-hidden="true"></i>
+                    </button>
                   </div>
-                  <div class="form-text" id="qHelp">Try a crop name, variety or keyword.</div>
 
                   {% if crops %}
                     <datalist id="cropSuggestions">
@@ -78,13 +76,13 @@
                 </fieldset>
 
                 <fieldset class="filter-fieldset mb-3">
-                  <legend class="mb-2">Location</legend>
+                  <legend class="mb-2" data-i18n="marketplace.location">{{ t('marketplace.location') }}</legend>
 
                   <div class="mb-2">
-                    <label for="state" class="form-label">State</label>
+                    <label for="state" class="form-label" data-i18n="marketplace.state">{{ t('marketplace.state') }}</label>
                     {% if states %}
                       <select class="form-select" id="state" name="state" data-ag-autosubmit>
-                        <option value="">All states</option>
+                        <option value="" data-i18n="marketplace.allStates">{{ t('marketplace.allStates') }}</option>
                         {% for s in states %}
                           <option value="{{ s }}" {% if f.state|default('', true) == s %}selected{% endif %}>{{ s }}</option>
                         {% endfor %}
@@ -96,10 +94,10 @@
                   </div>
 
                   <div class="mb-2">
-                    <label for="district" class="form-label">District</label>
+                    <label for="district" class="form-label" data-i18n="marketplace.district">{{ t('marketplace.district') }}</label>
                     {% if districts %}
                       <select class="form-select" id="district" name="district" data-ag-autosubmit>
-                        <option value="">All districts</option>
+                        <option value="" data-i18n="marketplace.allDistricts">{{ t('marketplace.allDistricts') }}</option>
                         {% for d in districts %}
                           <option value="{{ d }}" {% if f.district|default('', true) == d %}selected{% endif %}>{{ d }}</option>
                         {% endfor %}
@@ -112,34 +110,28 @@
                 </fieldset>
 
                 <fieldset class="filter-fieldset mb-3">
-                  <legend class="mb-2">Expected price (₹ per unit)</legend>
+                  <legend class="mb-2" data-i18n="marketplace.expectedPrice">{{ t('marketplace.expectedPrice') }}</legend>
 
                   <div class="row g-2">
                     <div class="col-6">
-                      <label for="min_price" class="form-label">Minimum</label>
                       <input type="number" class="form-control" id="min_price" name="min_price"
                              value="{{ f.min_price|default('', true) }}" min="0" step="1" inputmode="numeric"
-                             placeholder="0">
+                             placeholder="Min">
                     </div>
                     <div class="col-6">
-                      <label for="max_price" class="form-label">Maximum</label>
                       <input type="number" class="form-control" id="max_price" name="max_price"
                              value="{{ f.max_price|default('', true) }}" min="0" step="1" inputmode="numeric"
-                             placeholder="10000">
+                             placeholder="Max">
                     </div>
                   </div>
-                  {% if errors and errors.price_range %}
-                    <div class="ag-field-error" id="priceRangeError">{{ errors.price_range }}</div>
-                  {% endif %}
                 </fieldset>
 
                 <fieldset class="filter-fieldset mb-3">
-                  <legend class="mb-2">Sort by</legend>
-                  <select class="form-select" id="sort" name="sort" data-ag-autosubmit
-                          aria-label="Sort listings">
-                    {% for opt in sort_options|default([{'value':'newest','label':'Newest first'},{'value':'price_asc','label':'Price: low to high'},{'value':'price_desc','label':'Price: high to low'}]) %}
-                      <option value="{{ opt.value }}" {% if f.sort|default('newest', true) == opt.value %}selected{% endif %}>{{ opt.label }}</option>
-                    {% endfor %}
+                  <legend class="mb-2" data-i18n="marketplace.sortBy">{{ t('marketplace.sortBy') }}</legend>
+                  <select class="form-select" id="sort" name="sort" data-ag-autosubmit aria-label="Sort listings">
+                    <option value="newest" {% if f.sort|default('newest', true) == 'newest' %}selected{% endif %}>Newest first</option>
+                    <option value="price_asc" {% if f.sort|default('', true) == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if f.sort|default('', true) == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
                   </select>
                 </fieldset>
 
@@ -147,31 +139,35 @@
                   <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" value="1" id="mine" name="mine"
                            {% if f.mine|default('', true) %}checked{% endif %}>
-                    <label class="form-check-label" for="mine">Show only my listings</label>
+                    <label class="form-check-label" for="mine" data-i18n="nav.myListings">{{ t('nav.myListings') }}</label>
                   </div>
                 {% endif %}
 
                 <div class="d-grid gap-2">
                   <button type="submit" class="btn btn-ag-primary">
-                    <span class="btn-label"><i class="bi bi-search" aria-hidden="true"></i>Search</span>
+                    <span class="btn-label"><i class="bi bi-search me-1" aria-hidden="true"></i><span data-i18n="common.search">{{ t('common.search') }}</span></span>
                   </button>
                   <button type="button" class="btn btn-ag-light" data-ag-clear-filters="filterForm">
-                    <i class="bi bi-x-circle" aria-hidden="true"></i>Clear Filters
+                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i><span data-i18n="common.clear">{{ t('common.clear') }}</span>
                   </button>
                 </div>
               </form>
             </div>
           </div>
 
-          <!-- Help card -->
-          <div class="card card-ag mt-3">
+          <!-- Contact & Disclaimer card -->
+          <div class="card card-ag mt-3 border-success border-opacity-25 shadow-sm">
             <div class="card-body">
-              <h2 class="h6"><i class="bi bi-info-circle text-success" aria-hidden="true"></i> How contact works</h2>
-              <p class="small text-muted-ag mb-0">
-                Use <strong>Contact Farmer</strong> to reach the grower directly by
-                phone or email. AGRICONNECT only helps you connect — it does not
-                handle payments, pricing negotiations or transport.
+              <h2 class="h6 text-success fw-bold mb-2">
+                <i class="bi bi-telephone-forward me-1" aria-hidden="true"></i> <span data-i18n="footer.contactTitle">{{ t('footer.contactTitle') }}</span>
+              </h2>
+              <p class="small text-muted-ag mb-3" data-i18n="footer.contactText">
+                {{ t('footer.contactText') }}
               </p>
+              <div class="small p-2 rounded bg-light border border-secondary border-opacity-10 text-dark">
+                <i class="bi bi-shield-exclamation text-warning me-1" aria-hidden="true"></i>
+                <strong data-i18n="footer.disclaimerTitle">{{ t('footer.disclaimerTitle') }}</strong>: <span data-i18n="footer.disclaimerText">{{ t('footer.disclaimerText') }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -182,14 +178,13 @@
 
         <div class="results-toolbar d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
           <p class="mb-0">
-            <strong>{{ count }}</strong> listing{{ '' if count == 1 else 's' }} found
+            <strong>{{ count }}</strong> <span data-i18n="nav.browseLots">{{ t('nav.browseLots') }}</span>
             {% if f.q %} for “{{ f.q }}”{% endif %}
           </p>
           <div class="d-flex flex-wrap gap-2">
             {% if f.q or f.state or f.district or f.min_price or f.max_price or f.mine %}
-              <span class="badge-soft badge-soft-neutral"><i class="bi bi-funnel" aria-hidden="true"></i> Filters applied</span>
               <button type="button" class="btn btn-sm btn-ag-light" data-ag-clear-filters="filterForm">
-                <i class="bi bi-x" aria-hidden="true"></i>Reset
+                <i class="bi bi-x me-1" aria-hidden="true"></i><span data-i18n="common.clear">{{ t('common.clear') }}</span>
               </button>
             {% endif %}
           </div>
@@ -204,54 +199,12 @@
               </div>
             {% endfor %}
           </div>
-
-          {# ------------------------------ Pagination ------------------------ #}
-          {% if pagination and pagination.pages and pagination.pages > 1 %}
-            <nav aria-label="Marketplace pagination" class="mt-4">
-              <ul class="pagination pagination-ag justify-content-center mb-0">
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                  <a class="page-link" href="{% if pagination.has_prev %}{{ url_for('marketplace', f, { page: pagination.prev_num }) }}{% else %}#{% endif %}"
-                     {% if not pagination.has_prev %}tabindex="-1" aria-disabled="true"{% endif %}>
-                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Previous</span>
-                  </a>
-                </li>
-                {% for p in range(1, pagination.pages + 1) %}
-                  <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('marketplace', f, { page: p }) }}"
-                       {% if p == pagination.page %}aria-current="page"{% endif %}>{{ p }}</a>
-                  </li>
-                {% endfor %}
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                  <a class="page-link" href="{% if pagination.has_next %}{{ url_for('marketplace', f, { page: pagination.next_num }) }}{% else %}#{% endif %}"
-                     {% if not pagination.has_next %}tabindex="-1" aria-disabled="true"{% endif %}>
-                    <span class="d-none d-sm-inline">Next</span>
-                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          {% endif %}
-
         {% else %}
-          {# ---------------------------- Empty state ------------------------- #}
-          {% if f.q or f.state or f.district or f.min_price or f.max_price or f.mine %}
-            {% set es_icon = 'bi-search' %}
-            {% set es_title = 'No listings match your filters' %}
-            {% set es_text = 'Try a different crop name, widen the price range, or clear the location filters.' %}
-            {% set es_action_label = 'Clear all filters' %}
-            {% set es_action_url = url_for('marketplace') %}
-            {% include 'partials/empty_state.html' %}
-          {% else %}
-            {% set es_icon = 'bi-basket2' %}
-            {% set es_title = 'No crop listings yet' %}
-            {% set es_text = 'Be the first farmer in your district to publish a crop listing.' %}
-            {% set es_action_label = 'Add Crop Listing' %}
-            {% set es_action_url = url_for('create_listing') %}
-            {% set es_secondary_label = 'Browse all listings' %}
-            {% set es_secondary_url = url_for('marketplace') %}
-            {% include 'partials/empty_state.html' %}
-          {% endif %}
+          <div class="text-center py-5 bg-white rounded border">
+            <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="h5" data-i18n="marketplace.noListings">{{ t('marketplace.noListings') }}</h3>
+            <p class="text-muted small mb-0" data-i18n="marketplace.subtitle">{{ t('marketplace.subtitle') }}</p>
+          </div>
         {% endif %}
 
       </div>

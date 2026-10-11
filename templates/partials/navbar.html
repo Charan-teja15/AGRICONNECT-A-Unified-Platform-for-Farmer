@@ -1,9 +1,5 @@
 {# =========================================================================
-   partials/navbar.html — responsive navigation bar
-   Expects: current_user (Flask-Login), request (Flask request), url_for()
-   Endpoint names are the FLAT names documented in BACKEND_INTEGRATION.md.
-   If your app uses blueprints, change e.g. url_for('marketplace')
-   -> url_for('marketplace.index').
+   partials/navbar.html — responsive navigation bar with multilingual language selector
    ========================================================================= #}
 <nav class="navbar navbar-expand-lg navbar-ag sticky-top" aria-label="Main navigation">
   <div class="container-xxl">
@@ -19,7 +15,7 @@
       </span>
       <span class="brand-text">
         <span class="brand-name"><span class="agri">AGRI</span><span class="connect">CONNECT</span></span>
-        <span class="brand-tag">Farmer Services Platform</span>
+        <span class="brand-tag" data-i18n="tagline">Farmer Services Platform</span>
       </span>
     </a>
 
@@ -34,64 +30,116 @@
         <li class="nav-item">
           <a class="nav-link {% if request and request.endpoint == 'index' %}active{% endif %}"
              href="{{ url_for('index') }}" {% if request and request.endpoint == 'index' %}aria-current="page"{% endif %}>
-            <i class="bi bi-house-door" aria-hidden="true"></i>Home
+            <i class="bi bi-house-door" aria-hidden="true"></i><span data-i18n="nav.home">{{ t('nav.home') }}</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request and request.endpoint in ['marketplace', 'create_listing', 'edit_listing'] %}active{% endif %}"
              href="{{ url_for('marketplace') }}">
-            <i class="bi bi-basket2" aria-hidden="true"></i>Marketplace
+            <i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.marketplace">{{ t('nav.marketplace') }}</span>
           </a>
         </li>
+        {% if not current_user or not current_user.is_authenticated or current_user.role != 'buyer' %}
         <li class="nav-item">
           <a class="nav-link {% if request and request.endpoint in ['crop_advisory', 'advisory_result'] %}active{% endif %}"
              href="{{ url_for('crop_advisory') }}">
-            <i class="bi bi-flower2" aria-hidden="true"></i>Crop Advisory
+            <i class="bi bi-flower2" aria-hidden="true"></i><span data-i18n="nav.cropAdvisory">{{ t('nav.cropAdvisory') }}</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request and request.endpoint in ['subsidy_checker', 'subsidy_results'] %}active{% endif %}"
              href="{{ url_for('subsidy_checker') }}">
-            <i class="bi bi-bank2" aria-hidden="true"></i>Subsidy Checker
+            <i class="bi bi-bank2" aria-hidden="true"></i><span data-i18n="nav.schemes">{{ t('nav.schemes') }}</span>
           </a>
         </li>
+        {% endif %}
         {% if current_user and current_user.is_authenticated %}
         <li class="nav-item">
-          <a class="nav-link {% if request and request.endpoint == 'dashboard' %}active{% endif %}"
-             href="{{ url_for('dashboard') }}">
-            <i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard
-          </a>
+          {% if current_user.role == 'buyer' %}
+            <a class="nav-link {% if request and request.endpoint in ['buyer_dashboard', 'dashboard.buyer_dashboard_view'] %}active{% endif %}"
+               href="{{ url_for('buyer_dashboard') }}">
+              <i class="bi bi-grid-1x2" aria-hidden="true"></i><span data-i18n="nav.dashboard">{{ t('nav.dashboard') }}</span>
+            </a>
+          {% else %}
+            <a class="nav-link {% if request and request.endpoint in ['dashboard', 'dashboard.dashboard_view'] %}active{% endif %}"
+               href="{{ url_for('dashboard') }}">
+              <i class="bi bi-grid-1x2" aria-hidden="true"></i><span data-i18n="nav.dashboard">{{ t('nav.dashboard') }}</span>
+            </a>
+          {% endif %}
         </li>
         {% endif %}
       </ul>
 
+      {# --------------------------- Language Selector --------------------------- #}
+      <div class="dropdown me-lg-2 my-2 my-lg-0">
+        <button class="btn btn-ag-light btn-sm dropdown-toggle d-flex align-items-center gap-1.5 px-3 py-1.5 fw-medium"
+                type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                style="border-radius:20px; font-size:0.875rem; border:1px solid var(--ag-border);">
+          <i class="bi bi-globe text-success" aria-hidden="true"></i>
+          <span id="currentLangName">{{ current_lang_obj.nativeName if current_lang_obj else 'English' }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-1" aria-labelledby="langDropdown">
+          {% for lang_opt in languages|default([
+            {'code': 'en', 'name': 'English', 'nativeName': 'English'},
+            {'code': 'te', 'name': 'Telugu', 'nativeName': 'తెలుగు'},
+            {'code': 'hi', 'name': 'Hindi', 'nativeName': 'हिन्दी'},
+            {'code': 'ta', 'name': 'Tamil', 'nativeName': 'தமிழ்'},
+            {'code': 'kn', 'name': 'Kannada', 'nativeName': 'ಕನ್ನಡ'},
+            {'code': 'ml', 'name': 'Malayalam', 'nativeName': 'മലയാളം'},
+            {'code': 'mr', 'name': 'Marathi', 'nativeName': 'मराठी'}
+          ]) %}
+            <li>
+              <button type="button" class="dropdown-item d-flex align-items-center justify-content-between py-2 {% if (current_lang|default('en')) == lang_opt.code %}active fw-bold{% endif %}"
+                      onclick="window.switchLanguage('{{ lang_opt.code }}')">
+                <span>{{ lang_opt.nativeName }}</span>
+                <small class="text-muted ms-2">({{ lang_opt.name }})</small>
+              </button>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
       {# --------------------------- Auth area --------------------------- #}
-      <ul class="navbar-nav align-items-lg-center ms-lg-3">
+      <ul class="navbar-nav align-items-lg-center">
         {% if current_user and current_user.is_authenticated %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="profileMenu"
                role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <span class="avatar-circle" aria-hidden="true">{{ (current_user.name or 'F').slice(0, 2)|upper }}</span>
-              <span class="d-lg-none">My account</span>
+              <span class="avatar-circle" aria-hidden="true">{{ (current_user.name or 'U')|initials }}</span>
+              <span class="d-lg-none" data-i18n="nav.myAccount">{{ t('nav.myAccount') }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
               <li>
                 <span class="dropdown-item-text px-3 py-2">
-                  <span class="d-block fw-semibold">{{ current_user.name or 'Farmer' }}</span>
+                  <span class="d-block fw-semibold">{{ current_user.name or 'User' }}</span>
+                  {% if current_user.role == 'buyer' %}
+                    <span class="badge bg-secondary mb-1" data-i18n="roles.buyerUnverified">{{ t('roles.buyerUnverified') }}</span>
+                  {% else %}
+                    <span class="badge bg-success mb-1" data-i18n="roles.farmer">{{ t('roles.farmer') }}</span>
+                  {% endif %}
                   <small class="text-muted-ag d-block text-truncate" style="max-width: 15rem;">{{ current_user.email }}</small>
                 </span>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i>My profile</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i>Add crop listing</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('marketplace') }}?mine=1"><i class="bi bi-basket2" aria-hidden="true"></i>My listings</a></li>
+              {% if current_user.role == 'buyer' %}
+                <li><a class="dropdown-item" href="{{ url_for('buyer_dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i><span data-i18n="nav.buyerDash">{{ t('nav.buyerDash') }}</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('buyer_orders') }}"><i class="bi bi-bag-check" aria-hidden="true"></i><span>My Orders</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('wishlist') }}"><i class="bi bi-heart" aria-hidden="true"></i><span>Saved Wishlist</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i><span data-i18n="nav.myProfile">{{ t('nav.myProfile') }}</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('marketplace') }}"><i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.browseLots">{{ t('nav.browseLots') }}</span></a></li>
+              {% else %}
+                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2" aria-hidden="true"></i><span data-i18n="nav.farmerDash">{{ t('nav.farmerDash') }}</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('farmer_orders') }}"><i class="bi bi-inbox" aria-hidden="true"></i><span>Incoming Orders</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person" aria-hidden="true"></i><span data-i18n="nav.myProfile">{{ t('nav.myProfile') }}</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('create_listing') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i><span data-i18n="nav.addListing">{{ t('nav.addListing') }}</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('marketplace') }}?mine=1"><i class="bi bi-basket2" aria-hidden="true"></i><span data-i18n="nav.myListings">{{ t('nav.myListings') }}</span></a></li>
+              {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
                 <form method="post" action="{{ url_for('logout') }}" class="px-0">
                   {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                   <button type="submit" class="dropdown-item text-danger">
-                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Log out
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span data-i18n="nav.logout">{{ t('nav.logout') }}</span>
                   </button>
                 </form>
               </li>
@@ -100,12 +148,12 @@
         {% else %}
           <li class="nav-item">
             <a class="nav-link {% if request and request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">
-              <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Login
+              <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i><span data-i18n="nav.login">{{ t('nav.login') }}</span>
             </a>
           </li>
           <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
             <a class="btn btn-ag-primary btn-sm px-3 py-2 w-100 w-lg-auto" href="{{ url_for('register') }}">
-              <i class="bi bi-person-plus" aria-hidden="true"></i>Register
+              <i class="bi bi-person-plus" aria-hidden="true"></i><span data-i18n="nav.register">{{ t('nav.register') }}</span>
             </a>
           </li>
         {% endif %}
