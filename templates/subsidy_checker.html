@@ -4,7 +4,6 @@
 {% block description %}{{ t('schemes.subtitle') }}{% endblock %}
 
 {% set fd = form_data if form_data else (request.form if request else {}) %}
-{% set category_options = categories if categories else ['Marginal (below 1 hectare)', 'Small (1–2 hectares)', 'Semi-medium (2–4 hectares)', 'Medium (4–10 hectares)', 'Large (above 10 hectares)'] %}
 
 {% block content %}
 
@@ -21,9 +20,14 @@
           {{ t('schemes.subtitle') }}
         </p>
       </div>
-      <div class="col-lg-4 text-lg-end">
+      <div class="col-lg-4 text-lg-end d-flex gap-2 justify-content-lg-end">
+        {% if user %}
+          <a href="{{ url_for('my_saved_schemes') }}" class="btn btn-ag-light">
+            <i class="bi bi-bookmark-check me-1 text-success"></i>My Saved Schemes
+          </a>
+        {% endif %}
         <a href="{{ url_for('dashboard') }}" class="btn btn-ag-light">
-          <i class="bi bi-grid-1x2 me-1" aria-hidden="true"></i><span data-i18n="nav.dashboard">{{ t('nav.dashboard') }}</span>
+          <i class="bi bi-grid-1x2 me-1"></i><span data-i18n="nav.dashboard">{{ t('nav.dashboard') }}</span>
         </a>
       </div>
     </div>
@@ -34,72 +38,231 @@
   <div class="container-xxl">
     <div class="row g-4">
 
-      <!-- FORM -->
+      <!-- ELIGIBILITY FORM -->
       <div class="col-lg-8">
-        <div class="card card-ag">
-          <div class="card-header bg-white border-bottom py-3">
-            <h2 class="h6 mb-0"><i class="bi bi-bank2 text-success me-1" aria-hidden="true"></i> <span data-i18n="schemes.title">{{ t('schemes.title') }}</span></h2>
+        <div class="card card-ag shadow-sm">
+          <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+            <h2 class="h6 mb-0 text-success fw-bold">
+              <i class="bi bi-bank2 text-success me-2" aria-hidden="true"></i>
+              <span>Farmer Eligibility & Scheme Matching Questionnaire</span>
+            </h2>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+              <i class="bi bi-shield-check me-1"></i>Verified Guidelines
+            </span>
           </div>
 
           <div class="card-body p-4">
-            <form method="post" action="{{ url_for('subsidy_checker') }}" novalidate data-ag-validate>
+            <form method="post" action="{{ url_for('subsidy_checker') }}" novalidate data-ag-validate id="schemeForm">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
 
               {% if errors and errors.general %}
                 <div class="alert alert-ag alert-danger" role="alert">{{ errors.general }}</div>
               {% endif %}
 
-              <div class="row g-3">
-                <!-- State -->
-                <div class="col-md-6">
-                  <label for="state" class="form-label" data-i18n="register.state">
-                    {{ t('register.state') }} <span class="required-star" aria-hidden="true">*</span>
-                  </label>
-                  {% if states %}
-                    <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}" id="state" name="state" required>
-                      <option value="" {% if not fd.get('state') %}selected disabled{% endif %}>Select your state</option>
+              <!-- SECTION 1: LOCATION & LAND -->
+              <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">
+                  <i class="bi bi-geo-alt text-success me-1"></i> 1. Location & Landholding
+                </h3>
+                <div class="row g-3">
+                  <!-- State -->
+                  <div class="col-md-6">
+                    <label for="state" class="form-label fw-bold">
+                      <span data-i18n="register.state">{{ t('register.state') }}</span> <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select {% if errors and errors.state %}is-invalid{% endif %}" id="state" name="state" required onchange="handleStateChange(this.value)">
+                      <option value="" {% if not fd.get('state') and not (user and user.state) %}selected{% endif %}>Select State</option>
                       {% for s in states %}
-                        <option value="{{ s }}" {% if fd.get('state', user.state if user and user.state else '') == s %}selected{% endif %}>{{ s }}</option>
+                        <option value="{{ s }}" {% if (fd.get('state') or (user and user.state)) == s %}selected{% endif %}>{{ s }}</option>
                       {% endfor %}
                     </select>
-                  {% else %}
-                    <input type="text" class="form-control" id="state" name="state" value="{{ fd.get('state', user.state if user and user.state else '') }}" required>
-                  {% endif %}
-                </div>
+                    {% if errors and errors.state %}
+                      <div class="invalid-feedback d-block">{{ errors.state }}</div>
+                    {% endif %}
+                  </div>
 
-                <!-- District -->
-                <div class="col-md-6">
-                  <label for="district" class="form-label" data-i18n="register.district">{{ t('register.district') }}</label>
-                  {% if districts %}
+                  <!-- District -->
+                  <div class="col-md-6">
+                    <label for="district" class="form-label fw-bold" data-i18n="register.district">{{ t('register.district') }}</label>
                     <select class="form-select" id="district" name="district">
-                      <option value="">All districts</option>
+                      <option value="">All Districts</option>
                       {% for d in districts %}
-                        <option value="{{ d }}" {% if fd.get('district', user.district if user and user.district else '') == d %}selected{% endif %}>{{ d }}</option>
+                        <option value="{{ d }}" {% if (fd.get('district') or (user and user.district)) == d %}selected{% endif %}>{{ d }}</option>
                       {% endfor %}
                     </select>
-                  {% else %}
-                    <input type="text" class="form-control" id="district" name="district" value="{{ fd.get('district', user.district if user and user.district else '') }}">
-                  {% endif %}
-                </div>
+                  </div>
 
-                <!-- Land size -->
-                <div class="col-md-6">
-                  <label for="land_size" class="form-label" data-i18n="schemes.landSize">{{ t('schemes.landSize') }}</label>
-                  <input type="number" class="form-control" id="land_size" name="land_size" value="{{ fd.get('land_size', user.land_size if user and user.land_size else '') }}" min="0" step="0.1" placeholder="e.g. 2.0">
-                </div>
+                  <!-- Land size -->
+                  <div class="col-md-6">
+                    <label for="land_size" class="form-label fw-bold">
+                      Landholding Size (Acres) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <input type="number" class="form-control {% if errors and errors.land_size %}is-invalid{% endif %}"
+                             id="land_size" name="land_size"
+                             value="{{ fd.get('land_size', user.land_size if user and user.land_size else '2.5') }}"
+                             min="0" max="1000" step="0.1" placeholder="e.g. 2.5" required>
+                      <span class="input-group-text">Acres</span>
+                    </div>
+                    {% if errors and errors.land_size %}
+                      <div class="invalid-feedback d-block">{{ errors.land_size }}</div>
+                    {% endif %}
+                    <div class="form-text text-muted">1 Hectare = 2.47 Acres. Enter 0 if landless worker.</div>
+                  </div>
 
-                <!-- Main crop -->
-                <div class="col-md-6">
-                  <label for="crop_type" class="form-label" data-i18n="register.mainCrop">{{ t('register.mainCrop') }}</label>
-                  <input type="text" class="form-control" id="crop_type" name="crop_type" value="{{ fd.get('crop_type', user.preferred_crop if user and user.preferred_crop else '') }}" placeholder="e.g. Paddy, Cotton">
+                  <!-- Farmer Type -->
+                  <div class="col-md-6">
+                    <label for="farmer_type" class="form-label fw-bold">
+                      Farmer Type / Classification <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="farmer_type" name="farmer_type" required onchange="handleFarmerTypeChange(this.value)">
+                      <option value="landowner" {% if fd.get('farmer_type', 'landowner') == 'landowner' %}selected{% endif %}>Landowner (Pattadar / Title Holder)</option>
+                      <option value="tenant_farmer" {% if fd.get('farmer_type') == 'tenant_farmer' %}selected{% endif %}>Tenant Farmer (Lessee)</option>
+                      <option value="sharecropper" {% if fd.get('farmer_type') == 'sharecropper' %}selected{% endif %}>Sharecropper (Kauludaru)</option>
+                      <option value="agricultural_labourer" {% if fd.get('farmer_type') == 'agricultural_labourer' %}selected{% endif %}>Agricultural Labourer</option>
+                    </select>
+                  </div>
                 </div>
+              </div>
+
+              <!-- SECTION 2: LAND DOCUMENT PROOF -->
+              <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">
+                  <i class="bi bi-file-earmark-text text-success me-1"></i> 2. Land Records & Document Status
+                </h3>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="land_document_status" class="form-label fw-bold">Land Record Availability</label>
+                    <select class="form-select" id="land_document_status" name="land_document_status">
+                      <option value="pattadar_passbook" {% if fd.get('land_document_status') == 'pattadar_passbook' %}selected{% endif %}>Registered Pattadar Passbook / Dharani Record</option>
+                      <option value="lease_agreement" {% if fd.get('land_document_status') == 'lease_agreement' %}selected{% endif %}>Registered / Written Lease Agreement</option>
+                      <option value="oral_lease" {% if fd.get('land_document_status') == 'oral_lease' %}selected{% endif %}>Oral Lease / Verbal Agreement with Landlord</option>
+                      <option value="no_land_record" {% if fd.get('land_document_status') == 'no_land_record' %}selected{% endif %}>No Land Documents Available</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="farming_activity" class="form-label fw-bold">Primary Farming Activity</label>
+                    <select class="form-select" id="farming_activity" name="farming_activity">
+                      <option value="crop_cultivation" {% if fd.get('farming_activity', 'crop_cultivation') == 'crop_cultivation' %}selected{% endif %}>Field Crop Cultivation (Foodgrains/Commercial)</option>
+                      <option value="horticulture" {% if fd.get('farming_activity') == 'horticulture' %}selected{% endif %}>Horticulture (Fruits/Vegetables/Spices)</option>
+                      <option value="dairy" {% if fd.get('farming_activity') == 'dairy' %}selected{% endif %}>Dairy & Livestock Farming</option>
+                      <option value="fisheries" {% if fd.get('farming_activity') == 'fisheries' %}selected{% endif %}>Fisheries & Aquaculture</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 3: CROPS & IRRIGATION -->
+              <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">
+                  <i class="bi bi-droplet-half text-success me-1"></i> 3. Crops & Irrigation Infrastructure
+                </h3>
+                <div class="row g-3">
+                  <!-- Crop -->
+                  <div class="col-md-6">
+                    <label for="crop_type" class="form-label fw-bold">Currently Cultivated Crop</label>
+                    <input type="text" class="form-control" id="crop_type" name="crop_type"
+                           value="{{ fd.get('crop_type', user.preferred_crop if user and user.preferred_crop else '') }}"
+                           placeholder="e.g. Paddy, Cotton, Chilli, Tomato, Groundnut" list="cropList">
+                    <datalist id="cropList">
+                      {% for c in crops %}<option value="{{ c }}"></option>{% endfor %}
+                    </datalist>
+                  </div>
+
+                  <!-- Irrigation -->
+                  <div class="col-md-6">
+                    <label for="irrigation_method" class="form-label fw-bold">Primary Irrigation Method</label>
+                    <select class="form-select" id="irrigation_method" name="irrigation_method">
+                      <option value="canal_well" {% if fd.get('irrigation_method') == 'canal_well' %}selected{% endif %}>Borewell / Open Well / Canal Irrigation</option>
+                      <option value="rainfed" {% if fd.get('irrigation_method') == 'rainfed' %}selected{% endif %}>Rainfed / Monsoon Dependent Only</option>
+                      <option value="drip" {% if fd.get('irrigation_method') == 'drip' %}selected{% endif %}>Drip Irrigation Installed</option>
+                      <option value="sprinkler" {% if fd.get('irrigation_method') == 'sprinkler' %}selected{% endif %}>Sprinkler Irrigation Installed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 4: PERSONAL PROFILE & SOCIAL CATEGORY -->
+              <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">
+                  <i class="bi bi-person-vcard text-success me-1"></i> 4. Personal Profile & Category
+                </h3>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="age" class="form-label fw-bold">Farmer Age (Years)</label>
+                    <input type="number" class="form-control" id="age" name="age"
+                           value="{{ fd.get('age', '35') }}" min="18" max="100" placeholder="e.g. 35">
+                    <div class="form-text text-muted">Relevant for pension (PM-KMY: 18-40 yrs) and insurance (Rythu Bima: 18-59 yrs).</div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="social_category" class="form-label fw-bold">Social Category</label>
+                    <select class="form-select" id="social_category" name="social_category">
+                      <option value="General" {% if fd.get('social_category') == 'General' %}selected{% endif %}>General Category</option>
+                      <option value="OBC" {% if fd.get('social_category') == 'OBC' %}selected{% endif %}>OBC / BC</option>
+                      <option value="SC" {% if fd.get('social_category') == 'SC' %}selected{% endif %}>Scheduled Caste (SC) — Higher Subsidy Priority</option>
+                      <option value="ST" {% if fd.get('social_category') == 'ST' %}selected{% endif %}>Scheduled Tribe (ST) — Higher Subsidy Priority</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 5: DOCUMENTS CHECKLIST -->
+              <div class="mb-4">
+                <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">
+                  <i class="bi bi-check2-square text-success me-1"></i> 5. Document Availability Checklist
+                </h3>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="form-check form-switch card p-3 bg-light border">
+                      <input class="form-check-input" type="checkbox" role="switch" id="doc_aadhaar" name="doc_aadhaar" value="yes" checked>
+                      <label class="form-check-label fw-bold text-dark" for="doc_aadhaar">
+                        <i class="bi bi-card-heading text-primary me-1"></i> Aadhaar Card Available
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check form-switch card p-3 bg-light border">
+                      <input class="form-check-input" type="checkbox" role="switch" id="doc_bank" name="doc_bank" value="yes" checked>
+                      <label class="form-check-label fw-bold text-dark" for="doc_bank">
+                        <i class="bi bi-bank text-primary me-1"></i> Active Bank Account with IFSC
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check form-switch card p-3 bg-light border">
+                      <input class="form-check-input" type="checkbox" role="switch" id="doc_aadhaar_seeded" name="doc_aadhaar_seeded" value="yes" checked>
+                      <label class="form-check-label fw-bold text-dark" for="doc_aadhaar_seeded">
+                        <i class="bi bi-link-45deg text-success me-1"></i> Bank Account Seeded with Aadhaar (DBT)
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check form-switch card p-3 bg-light border">
+                      <input class="form-check-input" type="checkbox" role="switch" id="doc_passbook" name="doc_passbook" value="yes" {% if user %}checked{% endif %}>
+                      <label class="form-check-label fw-bold text-dark" for="doc_passbook">
+                        <i class="bi bi-journal-bookmark text-success me-1"></i> Pattadar Passbook / Land Record Proof
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HELPER NOTE FOR TENANTS -->
+              <div id="tenantNotice" class="alert alert-info py-2 small d-none">
+                <i class="bi bi-info-circle-fill me-1"></i> <strong>Tenant Farmers Note:</strong> While direct land cash grants require registered landownership, tenant farmers remain fully eligible for PMFBY Crop Insurance, Kisan Credit Card (KCC) loans, Subsidized Seeds, and Soil Health Cards.
               </div>
 
               <hr class="ag-rule my-4">
 
-              <div class="d-flex justify-content-end gap-2">
-                <button type="submit" class="btn btn-ag-primary px-4">
-                  <span class="btn-label"><i class="bi bi-search me-1" aria-hidden="true"></i><span data-i18n="schemes.checkBtn">{{ t('schemes.checkBtn') }}</span></span>
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="small text-muted"><i class="bi bi-shield-lock me-1"></i>Your information is used only to compute scheme matches.</span>
+                <button type="submit" class="btn btn-ag-primary px-4 py-2 fs-6 fw-bold" id="submitBtn">
+                  <i class="bi bi-search me-2"></i><span data-i18n="schemes.checkBtn">{{ t('schemes.checkBtn') }}</span>
                 </button>
               </div>
             </form>
@@ -109,12 +272,43 @@
 
       <!-- SIDE PANEL -->
       <div class="col-lg-4">
-        <div class="card card-ag">
+        <div class="card card-ag shadow-sm mb-3">
           <div class="card-body">
-            <h2 class="h6"><i class="bi bi-shield-check text-success me-1" aria-hidden="true"></i> <span data-i18n="footer.disclaimerTitle">{{ t('footer.disclaimerTitle') }}</span></h2>
-            <p class="small text-muted-ag mb-3" data-i18n="footer.disclaimerText">
-              {{ t('footer.disclaimerText') }}
+            <h2 class="h6 fw-bold text-success mb-2">
+              <i class="bi bi-shield-check me-1"></i> Verified Scheme Rules Engine
+            </h2>
+            <p class="small text-muted mb-3">
+              AGRICONNECT evaluates your inputs against 13+ verified Central and Telangana State Government scheme rules using transparent criteria:
             </p>
+            <ul class="small text-muted ps-3 mb-0">
+              <li class="mb-1"><strong>Mandatory Conditions:</strong> State boundary, landownership, and age limits.</li>
+              <li class="mb-1"><strong>Exclusion Checks:</strong> Tax payers and non-agricultural plot exclusions.</li>
+              <li class="mb-1"><strong>Document Verification:</strong> Aadhaar-bank seeding for Direct Benefit Transfer (DBT).</li>
+              <li class="mb-1"><strong>Legitimate Next Steps:</strong> Actionable steps to qualify for missing criteria.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card card-ag shadow-sm">
+          <div class="card-body">
+            <h2 class="h6 fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-1"></i> Key Central & Telangana Schemes</h2>
+            <div class="list-group list-group-flush small">
+              <div class="list-group-item px-0 py-2 border-0">
+                <strong>PM-KISAN:</strong> ₹6,000/yr for landowning farmers
+              </div>
+              <div class="list-group-item px-0 py-2 border-0 border-top">
+                <strong>Rythu Bharosa (Telangana):</strong> ₹10,000-12,000/acre/yr investment support
+              </div>
+              <div class="list-group-item px-0 py-2 border-0 border-top">
+                <strong>Rythu Bima (Telangana):</strong> ₹5.00 Lakh life insurance (18-59 yrs)
+              </div>
+              <div class="list-group-item px-0 py-2 border-0 border-top">
+                <strong>PMFBY:</strong> Subsidized crop insurance for all cultivators
+              </div>
+              <div class="list-group-item px-0 py-2 border-0 border-top">
+                <strong>TGMIP:</strong> 80% to 100% micro-irrigation drip subsidy
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -122,5 +316,31 @@
     </div>
   </div>
 </section>
+
+<script>
+function handleFarmerTypeChange(val) {
+  const notice = document.getElementById('tenantNotice');
+  const passbookSwitch = document.getElementById('doc_passbook');
+  if (val === 'tenant_farmer' || val === 'sharecropper' || val === 'agricultural_labourer') {
+    if (notice) notice.classList.remove('d-none');
+    if (passbookSwitch) passbookSwitch.checked = false;
+  } else {
+    if (notice) notice.classList.add('d-none');
+    if (passbookSwitch) passbookSwitch.checked = true;
+  }
+}
+
+function handleStateChange(val) {
+  // Can filter districts dynamically
+}
+
+document.getElementById('schemeForm')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Matching Verified Government Rules...';
+  }
+});
+</script>
 
 {% endblock %}

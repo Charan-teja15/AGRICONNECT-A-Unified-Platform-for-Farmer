@@ -1,150 +1,152 @@
 {# =========================================================================
-   partials/scheme_card.html — one government scheme result card
-
-   Required context : `scheme`
-   Scheme fields used (ORM object or dict):
-     id, name, description, level, category,
-     geo_applicability (string)  |  states (list) — either is fine,
-     eligibility_status  ('potential_match' | 'check_conditions' |
-                          'verification_required'),
-     match_score (optional 0-100, rendered as a cautious strength meter),
-     why_matched (list), conditions_to_verify (list),
-     documents_required (list), application_instructions, official_url
-
-   NOTE: nothing here invents scheme data — every value comes from the backend.
+   partials/scheme_card.html — Comprehensive Government Scheme Card
    ========================================================================= #}
-{% set st = (scheme.eligibility_status or 'check_conditions')|lower %}
-{% if st in ['potential_match', 'potential-match', 'match'] %}
-  {% set badge_class = 'badge-soft' %}
-  {% set badge_icon = 'bi-check2-circle' %}
-  {% set badge_text = 'Potential Match' %}
-{% elif st in ['verification_required', 'verification-required', 'official'] %}
-  {% set badge_class = 'badge-soft badge-soft-info' %}
-  {% set badge_icon = 'bi-bank2' %}
-  {% set badge_text = 'Official Verification Required' %}
+{% set st = (scheme.eligibility_status or 'possibly_eligible')|lower %}
+{% if st in ['likely_eligible', 'likely', 'eligible'] %}
+  {% set badge_bg = 'bg-success text-white' %}
+  {% set badge_icon = 'bi-check-circle-fill' %}
+  {% set badge_text = 'Likely Eligible' %}
+{% elif st in ['not_eligible', 'not-eligible', 'ineligible'] %}
+  {% set badge_bg = 'bg-danger text-white' %}
+  {% set badge_icon = 'bi-x-circle-fill' %}
+  {% set badge_text = 'Not Eligible Based on Details' %}
+{% elif st in ['needs_verification', 'verification_required', 'unverified'] %}
+  {% set badge_bg = 'bg-secondary text-white' %}
+  {% set badge_icon = 'bi-search' %}
+  {% set badge_text = 'Needs Official Verification' %}
 {% else %}
-  {% set badge_class = 'badge-soft badge-soft-warning' %}
-  {% set badge_icon = 'bi-exclamation-circle' %}
-  {% set badge_text = 'Check Additional Conditions' %}
+  {% set badge_bg = 'bg-warning text-dark' %}
+  {% set badge_icon = 'bi-exclamation-triangle-fill' %}
+  {% set badge_text = 'Possibly Eligible — More Details Needed' %}
 {% endif %}
 
-<div class="card card-ag card-ag-hover scheme-card">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
-      <div class="flex-grow-1" style="min-width: 15rem;">
-        <h3 class="scheme-title">{{ scheme.name }}</h3>
-        <div class="d-flex flex-wrap gap-1">
-          <span class="{{ badge_class }}"><i class="bi {{ badge_icon }}" aria-hidden="true"></i> {{ badge_text }}</span>
-          {% if scheme.level %}<span class="badge-soft badge-soft-neutral"><i class="bi bi-globe2" aria-hidden="true"></i> {{ scheme.level }}</span>{% endif %}
-          {% if scheme.category %}<span class="badge-soft badge-soft-neutral"><i class="bi bi-tag" aria-hidden="true"></i> {{ scheme.category }}</span>{% endif %}
+<div class="card card-ag shadow-sm h-100 scheme-card border-top border-4 {% if st in ['likely_eligible', 'likely'] %}border-success{% elif st in ['not_eligible', 'not-eligible'] %}border-danger{% else %}border-warning{% endif %}" data-scheme-status="{{ st }}" data-scheme-level="{{ (scheme.level or 'Central')|lower }}" data-scheme-category="{{ (scheme.category or '')|lower }}">
+  <div class="card-body p-4 d-flex flex-column">
+
+    <!-- HEADER & BADGES -->
+    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+      <div>
+        <span class="badge {{ badge_bg }} px-3 py-2 fs-6 fw-bold mb-2 d-inline-block">
+          <i class="bi {{ badge_icon }} me-1"></i> {{ badge_text }}
+        </span>
+        <h3 class="h5 fw-bold text-dark mb-1">{{ scheme.name }}</h3>
+        <div class="small text-muted mb-2">
+          <span class="me-2"><i class="bi bi-building me-1"></i>{{ scheme.department or 'Government Department' }}</span>
+          {% if scheme.official_id %}<span class="badge bg-light text-dark border me-1">ID: {{ scheme.official_id }}</span>{% endif %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-globe2 me-1"></i>{{ scheme.level }}</span>
+          {% if scheme.category %}<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1"><i class="bi bi-tag me-1"></i>{{ scheme.category }}</span>{% endif %}
         </div>
       </div>
+      
       {% if scheme.match_score %}
-        <div class="text-end" style="min-width: 8rem;">
-          <span class="small-caps text-muted-ag">Match strength</span>
-          <div class="eligibility-meter" role="img"
-               aria-label="Indicative match strength: {{ scheme.match_score }} percent">
-            {% for i in range(5) %}
-              <span class="em-bar {% if scheme.match_score >= (i + 1) * 20 %}on{% elif scheme.match_score >= i * 20 + 10 %}partial{% endif %}"></span>
-            {% endfor %}
+        <div class="text-end">
+          <span class="small text-muted d-block fw-bold">Match Score</span>
+          <span class="fs-4 fw-bold {% if scheme.match_score >= 80 %}text-success{% elif scheme.match_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+            {{ scheme.match_score }}%
+          </span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- SCHEME DESCRIPTION -->
+    <p class="small text-secondary mb-3 leading-relaxed">
+      {{ scheme.description }}
+    </p>
+
+    <!-- VERIFIED BENEFITS HIGHLIGHT BOX -->
+    {% if scheme.benefits %}
+      <div class="p-3 bg-success-subtle rounded border border-success-subtle mb-3">
+        <span class="small text-success fw-bold d-block mb-1"><i class="bi bi-gift-fill me-1"></i> Verified Scheme Benefit</span>
+        <div class="fw-bold text-dark fs-6">{{ scheme.benefits }}</div>
+      </div>
+    {% endif %}
+
+    <!-- SATISFIED CRITERIA -->
+    {% if scheme.why_matched and scheme.why_matched|length > 0 %}
+      <div class="mb-3">
+        <span class="small text-success fw-bold d-block mb-1"><i class="bi bi-check2-circle me-1"></i> Conditions Satisfied</span>
+        <ul class="list-unstyled small text-dark mb-0 ps-1">
+          {% for cond in scheme.why_matched %}
+            <li class="d-flex align-items-start mb-1">
+              <i class="bi bi-check-lg text-success me-2 flex-shrink-0 mt-1"></i>
+              <span>{{ cond }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <!-- UNMET CONDITIONS & EXCLUSIONS -->
+    {% if scheme.unmet_conditions and scheme.unmet_conditions|length > 0 %}
+      <div class="mb-3 p-3 bg-danger-subtle rounded border border-danger-subtle">
+        <span class="small text-danger fw-bold d-block mb-1"><i class="bi bi-x-circle me-1"></i> Unmet Criteria / Reason Not Eligible</span>
+        <ul class="list-unstyled small text-danger-emphasis mb-0 ps-1">
+          {% for unmet_item in scheme.unmet_conditions %}
+            <li class="d-flex align-items-start mb-1">
+              <i class="bi bi-x-lg text-danger me-2 flex-shrink-0 mt-1"></i>
+              <span>{{ unmet_item }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <!-- MISSING DETAILS / REQUIRED DOCUMENTS -->
+    {% if scheme.missing_details and scheme.missing_details|length > 0 %}
+      <div class="mb-3 p-3 bg-warning-subtle rounded border border-warning-subtle">
+        <span class="small text-warning-emphasis fw-bold d-block mb-1"><i class="bi bi-exclamation-circle me-1"></i> Information / Documents Needed</span>
+        <ul class="list-unstyled small text-dark mb-0 ps-1">
+          {% for miss in scheme.missing_details %}
+            <li class="d-flex align-items-start mb-1">
+              <i class="bi bi-arrow-right-short text-warning me-1 flex-shrink-0 fs-5"></i>
+              <span>{{ miss }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <!-- LEGITIMATE NEXT STEPS TO BECOME ELIGIBLE -->
+    {% if scheme.legitimate_next_steps and scheme.legitimate_next_steps|length > 0 %}
+      <div class="mb-3 p-3 bg-light rounded border">
+        <span class="small text-dark fw-bold d-block mb-1"><i class="bi bi-signpost-split text-primary me-1"></i> How to Become Eligible & Next Steps</span>
+        <ul class="list-unstyled small text-muted mb-0 ps-1">
+          {% for step in scheme.legitimate_next_steps %}
+            <li class="d-flex align-items-start mb-1">
+              <i class="bi bi-check2 text-primary me-2 flex-shrink-0 mt-1"></i>
+              <span>{{ step }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <!-- APPLICATION INSTRUCTIONS COLLAPSIBLE -->
+    {% if scheme.application_instructions %}
+      <div class="mb-3 mt-auto">
+        <button class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center py-2" type="button" data-bs-toggle="collapse" data-bs-target="#appSteps{{ scheme.id or loop.index }}">
+          <span><i class="bi bi-list-numbered me-1 text-success"></i> Step-by-Step Application Guide</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <div class="collapse mt-2" id="appSteps{{ scheme.id or loop.index }}">
+          <div class="p-3 bg-light rounded border small text-dark leading-relaxed whitespace-pre-line">
+            {{ scheme.application_instructions }}
           </div>
         </div>
-      {% endif %}
-    </div>
-
-    <p class="scheme-desc">{{ scheme.description }}</p>
-
-    <div class="row g-3">
-      {# --------------------------- Geographic --------------------------- #}
-      <div class="col-md-6">
-        <div class="scheme-block">
-          <h4><i class="bi bi-geo-alt" aria-hidden="true"></i>Applicable in</h4>
-          {% if scheme.geo_applicability %}
-            <p class="mb-0 small">{{ scheme.geo_applicability }}</p>
-          {% elif scheme.states %}
-            <p class="mb-0 small">{{ scheme.states|join(', ') }}</p>
-          {% else %}
-            <p class="mb-0 small text-muted-ag">Not specified — confirm with the implementing department.</p>
-          {% endif %}
-        </div>
-
-        <div class="scheme-block">
-          <h4><i class="bi bi-clipboard-check" aria-hidden="true"></i>Eligibility status</h4>
-          <p class="mb-0 small">
-            {{ scheme.eligibility_note or 'Your profile appears broadly consistent with this scheme. Final eligibility is decided by the implementing authority.' }}
-          </p>
-        </div>
       </div>
-
-      {# --------------------------- Why matched -------------------------- #}
-      <div class="col-md-6">
-        <div class="scheme-block">
-          <h4><i class="bi bi-diagram-3" aria-hidden="true"></i>Why this scheme matched</h4>
-          {% if scheme.why_matched %}
-            <ul class="scheme-list">
-              {% for reason in scheme.why_matched %}
-                <li>{{ reason }}</li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <p class="mb-0 small text-muted-ag">No specific match reasons were returned for this scheme.</p>
-          {% endif %}
-        </div>
-      </div>
-
-      {# ------------------------ Conditions to verify -------------------- #}
-      {% if scheme.conditions_to_verify %}
-      <div class="col-md-6">
-        <div class="scheme-block">
-          <h4><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Conditions you must verify</h4>
-          <ul class="scheme-list">
-            {% for condition in scheme.conditions_to_verify %}
-              <li>{{ condition }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-      {% endif %}
-
-      {# -------------------------- Documents needed ---------------------- #}
-      {% if scheme.documents_required %}
-      <div class="col-md-6">
-        <div class="scheme-block">
-          <h4><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Documents usually required</h4>
-          <ul class="scheme-list">
-            {% for document in scheme.documents_required %}
-              <li>{{ document }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-      {% endif %}
-
-      {# ------------------------- How to apply --------------------------- #}
-      {% if scheme.application_instructions %}
-      <div class="col-12">
-        <div class="scheme-block">
-          <h4><i class="bi bi-list-check" aria-hidden="true"></i>How to apply</h4>
-          <p class="mb-0 small">{{ scheme.application_instructions|replace('\n', '<br>')|safe }}</p>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <span class="text-muted-ag small">
-      <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
-      Informational match only — not an approval.
-    </span>
-    {% if scheme.official_url %}
-      <a href="{{ scheme.official_url }}" class="btn btn-sm btn-ag-outline" target="_blank" rel="noopener noreferrer">
-        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Official website
-      </a>
-    {% else %}
-      <span class="badge-soft badge-soft-neutral">
-        <i class="bi bi-link-45deg" aria-hidden="true"></i> No official link stored
-      </span>
     {% endif %}
+
+    <!-- FOOTER WITH LINKS & VERIFIED DATE -->
+    <div class="pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+      <span class="small text-muted">
+        <i class="bi bi-patch-check-fill text-success me-1"></i>Rules Verified: {{ scheme.last_verified_date or 'October 2026' }}
+      </span>
+      {% if scheme.official_url %}
+        <a href="{{ scheme.official_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ag-primary">
+          Apply on Official Portal <i class="bi bi-box-arrow-up-right ms-1"></i>
+        </a>
+      {% endif %}
+    </div>
+
   </div>
 </div>

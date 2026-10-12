@@ -7,7 +7,6 @@
 {% set stage_options = growth_stages if growth_stages else ['Seedling', 'Vegetative', 'Flowering', 'Fruiting / Pod filling', 'Maturity / Harvest'] %}
 {% set soil_options = soil_types if soil_types else ['Sandy', 'Loamy', 'Clay', 'Black (regur)', 'Red', 'Laterite', 'Alluvial'] %}
 {% set irrigation_opts = irrigation_options if irrigation_options else ['Adequate irrigation', 'Limited irrigation', 'Rainfed only', 'No irrigation available'] %}
-{% set weather_opts = weather_options if weather_options else ['Normal', 'Hot and dry', 'Humid', 'Heavy rainfall', 'Cool / cold', 'Not sure'] %}
 
 {% block content %}
 
@@ -39,13 +38,19 @@
 
       <!-- FORM -->
       <div class="col-lg-8">
-        <div class="card card-ag">
-          <div class="card-header bg-white border-bottom py-3">
-            <h2 class="h6 mb-0"><i class="bi bi-clipboard-check text-success me-1" aria-hidden="true"></i> <span data-i18n="advisory.title">{{ t('advisory.title') }}</span></h2>
+        <div class="card card-ag shadow-sm">
+          <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+            <h2 class="h6 mb-0 text-success fw-bold">
+              <i class="bi bi-cpu text-success me-2" aria-hidden="true"></i>
+              <span data-i18n="advisory.title">{{ t('advisory.title') }}</span>
+            </h2>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+              <i class="bi bi-stars me-1"></i>Gemini AI Backed
+            </span>
           </div>
 
           <div class="card-body p-4">
-            <form method="post" action="{{ url_for('crop_advisory') }}" novalidate data-ag-validate>
+            <form method="post" action="{{ url_for('crop_advisory') }}" novalidate data-ag-validate id="advisoryForm">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
 
               {% if errors and errors.general %}
@@ -55,77 +60,176 @@
               <div class="row g-3">
                 <!-- Crop name -->
                 <div class="col-md-6">
-                  <label for="crop_name" class="form-label" data-i18n="advisory.crop">
-                    {{ t('advisory.crop') }} <span class="required-star" aria-hidden="true">*</span>
+                  <label for="crop_name" class="form-label fw-bold">
+                    <span data-i18n="advisory.crop">{{ t('advisory.crop') }}</span> <span class="text-danger">*</span>
                   </label>
                   <input type="text" class="form-control {% if errors and errors.crop_name %}is-invalid{% endif %}"
                          id="crop_name" name="crop_name"
                          value="{{ qd.get('crop_name', user.preferred_crop if user and user.preferred_crop else '') }}"
-                         placeholder="e.g. Paddy, Cotton, Tomato"
-                         list="cropSuggestions" maxlength="60" required
-                         {% if errors and errors.crop_name %}aria-invalid="true" aria-describedby="crop_nameError"{% endif %}>
-                  {% if crops %}
-                    <datalist id="cropSuggestions">
-                      {% for crop in crops %}<option value="{{ crop }}"></option>{% endfor %}
-                    </datalist>
-                  {% endif %}
+                         placeholder="e.g. Paddy, Cotton, Chilli, Tomato, Groundnut"
+                         list="cropSuggestions" maxlength="60" required>
+                  <datalist id="cropSuggestions">
+                    <option value="Paddy / Rice"></option>
+                    <option value="Cotton"></option>
+                    <option value="Chilli"></option>
+                    <option value="Tomato"></option>
+                    <option value="Groundnut"></option>
+                    <option value="Wheat"></option>
+                    <option value="Maize"></option>
+                    <option value="Sugarcane"></option>
+                    <option value="Bengal Gram"></option>
+                    <option value="Onion"></option>
+                    <option value="Turmeric"></option>
+                    <option value="Banana"></option>
+                    <option value="Mango"></option>
+                  </datalist>
                   {% if errors and errors.crop_name %}
-                    <div class="ag-field-error" id="crop_nameError">{{ errors.crop_name }}</div>
+                    <div class="invalid-feedback d-block">{{ errors.crop_name }}</div>
                   {% endif %}
+                </div>
+
+                <!-- Problem Category -->
+                <div class="col-md-6">
+                  <label for="problem_category" class="form-label fw-bold">
+                    <span data-i18n="advisory.category">{{ t('advisory.category') }}</span>
+                  </label>
+                  <select class="form-select" id="problem_category" name="problem_category">
+                    <option value="" {% if not qd.get('problem_category') %}selected{% endif %}>Select category (Optional)</option>
+                    {% if problem_categories %}
+                      {% for cat in problem_categories %}
+                        <option value="{{ cat }}" {% if qd.get('problem_category', '') == cat %}selected{% endif %}>{{ cat }}</option>
+                      {% endfor %}
+                    {% else %}
+                      <option value="Leaf disease / Spots / Blight">Leaf disease / Spots / Blight</option>
+                      <option value="Pests & Insect damage">Pests & Insect damage</option>
+                      <option value="Yellowing leaves / Chlorosis">Yellowing leaves / Chlorosis</option>
+                      <option value="Wilting / Drying of plant">Wilting / Drying of plant</option>
+                      <option value="Poor growth & Stunting">Poor growth & Stunting</option>
+                      <option value="Irrigation / Water stress">Irrigation / Water stress</option>
+                      <option value="Fertilizer & Nutrient issue">Fertilizer & Nutrient issue</option>
+                      <option value="Soil & Root issue">Soil & Root issue</option>
+                      <option value="Other / Unsure">Other / Unsure</option>
+                    {% endif %}
+                  </select>
                 </div>
 
                 <!-- Growth stage -->
                 <div class="col-md-6">
-                  <label for="growth_stage" class="form-label" data-i18n="advisory.growthStage">
-                    {{ t('advisory.growthStage') }} <span class="required-star" aria-hidden="true">*</span>
+                  <label for="growth_stage" class="form-label fw-bold">
+                    <span data-i18n="advisory.growthStage">{{ t('advisory.growthStage') }}</span>
                   </label>
-                  <select class="form-select {% if errors and errors.growth_stage %}is-invalid{% endif %}"
-                          id="growth_stage" name="growth_stage" required
-                          {% if errors and errors.growth_stage %}aria-invalid="true" aria-describedby="growth_stageError"{% endif %}>
-                    <option value="" {% if not qd.get('growth_stage') %}selected disabled{% endif %}>Select growth stage</option>
+                  <select class="form-select" id="growth_stage" name="growth_stage">
+                    <option value="" {% if not qd.get('growth_stage') %}selected{% endif %}>Select growth stage (Optional)</option>
                     {% for stage in stage_options %}
                       <option value="{{ stage }}" {% if qd.get('growth_stage', '') == stage %}selected{% endif %}>{{ stage }}</option>
                     {% endfor %}
                   </select>
-                  {% if errors and errors.growth_stage %}
-                    <div class="ag-field-error" id="growth_stageError">{{ errors.growth_stage }}</div>
+                </div>
+
+                <!-- Symptom Duration -->
+                <div class="col-md-6">
+                  <label for="symptom_duration" class="form-label fw-bold">
+                    <span data-i18n="advisory.symptomDuration">{{ t('advisory.symptomDuration') }}</span>
+                  </label>
+                  <select class="form-select" id="symptom_duration" name="symptom_duration">
+                    <option value="" {% if not qd.get('symptom_duration') %}selected{% endif %}>Select time frame (Optional)</option>
+                    {% if symptom_durations %}
+                      {% for dur in symptom_durations %}
+                        <option value="{{ dur }}" {% if qd.get('symptom_duration', '') == dur %}selected{% endif %}>{{ dur }}</option>
+                      {% endfor %}
+                    {% else %}
+                      <option value="Just started (1-2 days ago)">Just started (1-2 days ago)</option>
+                      <option value="Past week (3-7 days ago)">Past week (3-7 days ago)</option>
+                      <option value="1-2 weeks ago">1-2 weeks ago</option>
+                      <option value="More than 2 weeks ago">More than 2 weeks ago</option>
+                    {% endif %}
+                  </select>
+                </div>
+
+                <!-- Symptoms -->
+                <div class="col-12">
+                  <label for="symptoms" class="form-label fw-bold">
+                    <span data-i18n="advisory.symptoms">{{ t('advisory.symptoms') }}</span>
+                  </label>
+                  <div class="input-group">
+                    <textarea class="form-control {% if errors and errors.symptoms %}is-invalid{% endif %}"
+                              id="symptoms" name="symptoms" rows="3"
+                              placeholder="Describe symptoms in your own words (e.g. leaves turning yellow from bottom, reddish brown spots, caterpillars chewing stems)...">{{ qd.get('symptoms', '') }}</textarea>
+                    <button class="btn btn-ag-light border border-start-0 px-3" type="button" id="voiceAdvisoryBtn"
+                            title="Speak Symptoms in English, Telugu, Hindi, etc."
+                            onclick="window.startVoiceSearch('symptoms')">
+                      <i class="bi bi-mic-fill text-danger fs-5" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  {% if errors and errors.symptoms %}
+                    <div class="invalid-feedback d-block">{{ errors.symptoms }}</div>
                   {% endif %}
                 </div>
 
-                <!-- Soil type -->
+                <!-- Soil type & Irrigation -->
                 <div class="col-md-6">
-                  <label for="soil_type" class="form-label" data-i18n="advisory.soilType">{{ t('advisory.soilType') }}</label>
+                  <label for="soil_type" class="form-label fw-bold" data-i18n="advisory.soilType">{{ t('advisory.soilType') }}</label>
                   <select class="form-select" id="soil_type" name="soil_type">
-                    <option value="">Select soil type</option>
+                    <option value="">Select soil type (Optional)</option>
                     {% for soil in soil_options %}
                       <option value="{{ soil }}" {% if qd.get('soil_type', '') == soil %}selected{% endif %}>{{ soil }}</option>
                     {% endfor %}
                   </select>
                 </div>
 
-                <!-- Irrigation -->
                 <div class="col-md-6">
-                  <label for="irrigation" class="form-label" data-i18n="advisory.irrigation">{{ t('advisory.irrigation') }}</label>
+                  <label for="irrigation" class="form-label fw-bold" data-i18n="advisory.irrigation">{{ t('advisory.irrigation') }}</label>
                   <select class="form-select" id="irrigation" name="irrigation">
-                    <option value="">Select irrigation option</option>
+                    <option value="">Select irrigation (Optional)</option>
                     {% for ir in irrigation_opts %}
                       <option value="{{ ir }}" {% if qd.get('irrigation', '') == ir %}selected{% endif %}>{{ ir }}</option>
                     {% endfor %}
                   </select>
                 </div>
 
-                <!-- Symptoms -->
+                <!-- Location & Preferred Language -->
+                <div class="col-md-6">
+                  <label for="location" class="form-label fw-bold" data-i18n="advisory.location">
+                    Village / District / Location
+                  </label>
+                  <input type="text" class="form-control" id="location" name="location"
+                         value="{{ qd.get('location', user.district ~ ', ' ~ user.state if user and user.district else '') }}"
+                         placeholder="e.g. Warangal, Telangana">
+                </div>
+
+                <div class="col-md-6">
+                  <label for="preferred_language" class="form-label fw-bold">
+                    <i class="bi bi-translate text-success me-1"></i> <span data-i18n="advisory.preferredLang">Preferred Advisory Language</span>
+                  </label>
+                  <select class="form-select border-success" id="preferred_language" name="preferred_language">
+                    <option value="English" {% if qd.get('preferred_language') == 'English' %}selected{% endif %}>English</option>
+                    <option value="Telugu (తెలుగు)" {% if qd.get('preferred_language') == 'Telugu (తెలుగు)' or current_lang == 'te' %}selected{% endif %}>Telugu (తెలుగు)</option>
+                    <option value="Hindi (हिन्दी)" {% if qd.get('preferred_language') == 'Hindi (हिन्दी)' or current_lang == 'hi' %}selected{% endif %}>Hindi (हिन्दी)</option>
+                    <option value="Tamil (தமிழ்)" {% if qd.get('preferred_language') == 'Tamil (தமிழ்)' or current_lang == 'ta' %}selected{% endif %}>Tamil (தமிழ்)</option>
+                    <option value="Kannada (కನ್ನಡ)" {% if qd.get('preferred_language') == 'Kannada (కನ್ನಡ)' or current_lang == 'kn' %}selected{% endif %}>Kannada (ಕನ್ನಡ)</option>
+                    <option value="Malayalam (മലയാളം)" {% if qd.get('preferred_language') == 'Malayalam (മലയാളം)' or current_lang == 'ml' %}selected{% endif %}>Malayalam (മലയാളം)</option>
+                    <option value="Marathi (मराठी)" {% if qd.get('preferred_language') == 'Marathi (मराठी)' or current_lang == 'mr' %}selected{% endif %}>Marathi (मराठी)</option>
+                  </select>
+                </div>
+
+                <!-- Photo Upload with Instant Base64 Preview -->
                 <div class="col-12">
-                  <label for="symptoms" class="form-label" data-i18n="advisory.symptoms">{{ t('advisory.symptoms') }}</label>
-                  <div class="input-group">
-                    <textarea class="form-control" id="symptoms" name="symptoms" rows="3"
-                              data-i18n-placeholder="advisory.symptoms"
-                              placeholder="{{ t('advisory.symptoms') }}">{{ qd.get('symptoms', '') }}</textarea>
-                    <button class="btn btn-ag-light border border-start-0" type="button" id="voiceAdvisoryBtn"
-                            title="Voice Input (Speak in Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, or English)"
-                            onclick="window.startVoiceSearch('symptoms')">
-                      <i class="bi bi-mic-fill text-danger" aria-hidden="true"></i>
-                    </button>
+                  <label class="form-label fw-bold">
+                    <i class="bi bi-camera text-success me-1"></i> <span data-i18n="advisory.photo">Crop Photo (Optional)</span>
+                  </label>
+                  <input class="form-control" type="file" id="crop_photo_file" accept="image/*" onchange="previewCropPhoto(this)">
+                  <input type="hidden" id="crop_photo_base64" name="crop_photo" value="{{ qd.get('crop_photo', '') }}">
+                  <div class="form-text text-muted" data-i18n="advisory.photoHelp">
+                    Upload a clear photo of affected leaves, stems, or crop damage for visual AI diagnosis.
+                  </div>
+                  
+                  <div id="photoPreviewContainer" class="mt-2 {% if not qd.get('crop_photo') %}d-none{% endif %}">
+                    <div class="position-relative d-inline-block border rounded p-1 bg-light">
+                      <img id="photoPreviewImg" src="{{ qd.get('crop_photo', '') }}" alt="Crop Photo Preview" class="rounded" style="max-height: 180px; object-fit: contain;">
+                      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 rounded-circle p-1 lh-1" onclick="removeCropPhoto()" title="Remove photo">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -133,9 +237,10 @@
 
               <hr class="ag-rule my-4">
 
-              <div class="d-flex justify-content-end gap-2">
-                <button type="submit" class="btn btn-ag-primary px-4">
-                  <span class="btn-label"><i class="bi bi-cpu me-1" aria-hidden="true"></i><span data-i18n="advisory.submitBtn">{{ t('advisory.submitBtn') }}</span></span>
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Mandatory field: Crop Name and Symptoms / Category</span>
+                <button type="submit" class="btn btn-ag-primary px-4 py-2 fs-6 fw-bold" id="submitBtn">
+                  <i class="bi bi-stars me-2"></i><span data-i18n="advisory.submitBtn">{{ t('advisory.submitBtn') }}</span>
                 </button>
               </div>
             </form>
@@ -145,11 +250,25 @@
 
       <!-- SIDE PANEL -->
       <div class="col-lg-4">
-        <div class="card card-ag">
+        <div class="card card-ag shadow-sm mb-3">
           <div class="card-body">
-            <h2 class="h6"><i class="bi bi-shield-check text-success me-1" aria-hidden="true"></i> <span data-i18n="footer.disclaimerTitle">{{ t('footer.disclaimerTitle') }}</span></h2>
-            <p class="small text-muted-ag mb-3" data-i18n="footer.disclaimerText">
-              {{ t('footer.disclaimerText') }}
+            <h2 class="h6 fw-bold text-success mb-2">
+              <i class="bi bi-lightning-charge me-1"></i> How Crop Advisory Works
+            </h2>
+            <ul class="small text-muted ps-3 mb-0">
+              <li class="mb-1"><strong>Gemini AI Integration:</strong> Analyzes crop symptoms, growth stage, location, and uploaded photo.</li>
+              <li class="mb-1"><strong>Multilingual Output:</strong> Generates response in your chosen language (Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, or English).</li>
+              <li class="mb-1"><strong>Organic & Chemical Options:</strong> Provides balanced bio-remedies and chemical dosages.</li>
+              <li class="mb-1"><strong>Audio Support:</strong> Listen to the generated advice read aloud directly on your phone.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card card-ag shadow-sm">
+          <div class="card-body">
+            <h2 class="h6 fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i> Advisory Disclaimer</h2>
+            <p class="small text-muted mb-0">
+              This advisory guidance is informational and provided by AI / Agronomic rule models. Always confirm chemical dosage with your local Krishi Vigyan Kendra (KVK) or block agriculture officer.
             </p>
           </div>
         </div>
@@ -158,5 +277,38 @@
     </div>
   </div>
 </section>
+
+<script>
+function previewCropPhoto(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Image size should be under 8MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('crop_photo_base64').value = e.target.result;
+      document.getElementById('photoPreviewImg').src = e.target.result;
+      document.getElementById('photoPreviewContainer').classList.remove('d-none');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeCropPhoto() {
+  document.getElementById('crop_photo_file').value = '';
+  document.getElementById('crop_photo_base64').value = '';
+  document.getElementById('photoPreviewContainer').classList.add('d-none');
+}
+
+document.getElementById('advisoryForm')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Analyzing Crop Symptoms...';
+  }
+});
+</script>
 
 {% endblock %}
